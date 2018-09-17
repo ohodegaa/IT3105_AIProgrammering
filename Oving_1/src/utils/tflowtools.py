@@ -14,7 +14,7 @@ import numpy.random as npr
 
 def gen_initialized_session(dir='probeview'):
     sess = tf.Session()
-    sess.probe_stream = viewprep(sess, dir=dir)  # Create a probe stream and attach to the session
+    sess.summary_stream = viewprep(sess, dir=dir)  # Create a probe stream and attach to the session
     sess.viewdir = dir  # add a second slot, viewdir, to the session
     sess.run(tf.global_variables_initializer())
     return sess
@@ -48,7 +48,7 @@ def tfeval(operators):
 # This creates the main data for tensorboard viewing: the graph and variable histories.
 
 def viewprep(session, dir='probeview', flush=120, queue=10):
-    clear_tensorflow_log(dir)  # Without this, the directory fills up with unusable files
+    #clear_tensorflow_log(dir)  # Without this, the directory fills up with unusable files
     return tf.summary.FileWriter(dir, session.graph, flush_secs=flush, max_queue=queue)
 
 

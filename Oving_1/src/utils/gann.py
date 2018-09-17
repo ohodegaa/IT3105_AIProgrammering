@@ -11,7 +11,7 @@ class Gann:
 
     def __init__(self, dims, cman, lrate=.1, showint=None, mbs=10, vint=None, softmax=False, hidden_act_func=tf.nn.relu,
                  output_act_func=None, cost_func=None, init_weight_range=(-.1, .1),
-                 optimizer=tf.train.GradientDescentOptimizer):
+                 optimizer=tf.train.AdamOptimizer):
         self.learning_rate = lrate
         self.layer_sizes = dims  # Sizes of each layer of neurons
         self.show_interval = showint  # Frequency of showing grabbed variables
