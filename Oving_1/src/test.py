@@ -3,43 +3,35 @@ import numpy as np
 import math
 from utils import tflowtools as tft
 import matplotlib.pyplot as plt
-
+from utils.caseman import Caseman
 from utils.gann_module import Gannmodule
 
-data_set = np.array([
-    [[0, 0, 0], [1, 0]],
-    [[0, 0, 1], [0, 1]],
-    [[0, 1, 0], [1, 0]],
-    [[0, 1, 1], [1, 0]],
-    [[1, 0, 0], [1, 1]],
-    [[1, 0, 1], [1, 0]],
-    [[1, 1, 0], [1, 0]],
-    [[1, 1, 1], [0, 1]]
-])
 
-inputs = [c[0] for c in data_set]
-input_1 = tf.placeholder(tf.float32, shape=[None, 3], name="input_1")
+from utils.gann2 import Gann2
 
-targets = [c[1] for c in data_set]
-target = tf.placeholder(tf.float32, shape=[None, 2], name="target")
+data_set = tft.gen_all_parity_cases(2)
 
+cman = Caseman(lambda: data_set, 0.1, 0.1)
 
-weights_1 = tf.Variable(np.random.uniform(-.1, .1, size=[3, 2]), dtype=tf.float32, name="weights_1")
-biases_1 = tf.Variable(np.random.uniform(-.1, .1, size=[1, 2]), dtype=tf.float32, name="biases_1")
+dims = [2, 2, 2]
+cfuncs = [
+    ("mse", lambda target, output: tf.losses.mean_squared_error(labels=target, predictions=output)),
+    #("sig_cross_entr", lambda target, output: tf.losses.sigmoid_cross_entropy(multi_class_labels=target, logits=output)),
+    #("softmax_corss_entropy", lambda target, output: tf.losses.softmax_cross_entropy(onehot_labels=target, logits=output)),
+]
 
-output_1 = tf.nn.elu(tf.matmul(input_1, weights_1) + biases_1, name="output_1")
+for i in range(len(cfuncs)):
+    #for j in range(2, 13):
+    print(cfuncs[i][0] + " --> ", end="")
+  #  print(str(j))
+    #dims[1] = j
+    gann = Gann2(dims, caseman=cman, hidden_activation_function=tf.nn.leaky_relu, cost_function=cfuncs[i][1])
 
+    sess = tft.gen_initialized_session()
+    gann.train_network(sess, gann.caseman.get_training_cases(), 15)
+    sess.close()
 
-loss = tf.reduce_mean(tf.square(target - output_1))
-
-optimizer = tf.train.GradientDescentOptimizer(0.1)
-
-trainer = optimizer.minimize(loss=loss, name="backprop")
-
-sess = tf.Session()
-sess.run(tf.global_variables_initializer())
-
-for i in range(10):
-    results = sess.run([trainer, loss, weights_1], feed_dict={input_1: inputs[4:7], target: targets})
-
+    print("Error: " + str(gann.error_history[-1][1]))
+    plt.scatter(*zip(*gann.error_history))
+    plt.show()
 
