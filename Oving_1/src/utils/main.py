@@ -69,12 +69,13 @@ class Config_network:
         pop_target = True
         return tft.gen_segmented_vector_cases(vector_length,number_of_segments,min_segment,max_segment,pop_target)
 
-
+    #MNIST
+    def mnist_cases(self):
+        pass
 
 
     def main(self):
         scenario = input()
         cases = {
-            "parity":
-            " symmetry":
+
         }
