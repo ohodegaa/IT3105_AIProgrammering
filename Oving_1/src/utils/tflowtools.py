@@ -177,7 +177,7 @@ def check_vector_symmetry(v):
 # This produces a set of symmetric vectors and appends the class label onto the end (for ease of use in ML).
 
 def gen_symvect_cases(vlen, count, label=1):
-    return [gen_symmetric_vector(vlen) + [label] for i in range(count)]
+    return [[gen_symmetric_vector(vlen), [1,0]] for i in range(count)]
 
 
 def gen_anti_symvect_cases(vlen, count, label=0):
@@ -185,7 +185,7 @@ def gen_anti_symvect_cases(vlen, count, label=0):
     while len(cases) < count:
         v = gen_dense_vector(vlen, density=npr.uniform(0, 1))
         if not (check_vector_symmetry(v)):
-            cases.append(v + [label])
+            cases.append([v, [0, 1]])
     return cases
 
 
