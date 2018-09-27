@@ -9,9 +9,19 @@ from utils.gann_module import Gannmodule
 
 class Gann:
 
-    def __init__(self, dims, cman, lrate=.1, showint=None, mbs=10, vint=None, softmax=False, hidden_act_func=tf.nn.relu,
-                 output_act_func=None, cost_func=None, init_weight_range=(-.1, .1),
-                 optimizer=tf.train.GradientDescentOptimizer):
+    def __init__(self,
+                 dims,
+                 cman,
+                 lrate=.1,
+                 showint=None,
+                 mbs=10,
+                 vint=None,
+                 softmax=False,
+                 hidden_act_func=tf.nn.relu,
+                 output_act_func=None,
+                 loss_function=None,
+                 init_weight_range=(-.1, .1),
+                 optimizer=tf.train.AdamOptimizer):
         self.learning_rate = lrate
         self.layer_sizes = dims  # Sizes of each layer of neurons
         self.show_interval = showint  # Frequency of showing grabbed variables
@@ -25,7 +35,7 @@ class Gann:
         self.softmax_outputs = softmax
         self.hidden_act_func = hidden_act_func
         self.output_act_func = output_act_func
-        self.cost_function = cost_func
+        self.loss_function = loss_function
         self.init_weight_range = init_weight_range
         self.modules = []
         self.optimizer = optimizer
@@ -79,16 +89,16 @@ class Gann:
     # of the weight array.
 
     def configure_learning(self):
-        if type(self.cost_function) == "str":
+        if type(self.loss_function) == "str":
             self.error = {
                 "mse": lambda: tf.reduce_mean(tf.square(self.target - self.output)),
                 "scel": lambda: tf.reduce_mean(
                     tf.nn.sigmoid_cross_entropy_with_logits(labels=self.target, logits=self.output)),
                 "smce": lambda: tf.losses.softmax_cross_entropy(onehot_labels=self.target, logits=self.output,
                                                                 reduction=tf.losses.Reduction.MEAN),
-            }[self.cost_function]()
-        elif type(self.cost_function) == "function":
-            self.error = self.cost_function(self.target, self.output)
+            }[self.loss_function]()
+        elif type(self.loss_function) == "function":
+            self.error = self.loss_function(self.target, self.output)
         else:
             self.error = tf.reduce_mean(tf.square(self.target - self.output))
         self.predictor = self.output  # Simple prediction runs will request the value of output neurons
@@ -192,7 +202,7 @@ class Gann:
         return results[0], results[1], sess
 
     def display_grabvars(self, grabbed_vals, grabbed_vars, step=1):
-        names = [x.name for x in grabbed_vars];
+        names = [x.name for x in grabbed_vars]
         msg = "Grabbed Variables at Step " + str(step)
         print("\n" + msg, end="\n")
         fig_index = 0

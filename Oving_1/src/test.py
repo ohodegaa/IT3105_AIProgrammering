@@ -1,45 +1,32 @@
 import tensorflow as tf
-import numpy as np
-import math
 from utils import tflowtools as tft
-import matplotlib.pyplot as plt
+from utils.caseman import Caseman
+from utils.gann2 import Gann2
 
-from utils.gann_module import Gannmodule
+data_set = tft.gen_all_parity_cases(10)
 
-data_set = np.array([
-    [[0, 0, 0], [1, 0]],
-    [[0, 0, 1], [0, 1]],
-    [[0, 1, 0], [1, 0]],
-    [[0, 1, 1], [1, 0]],
-    [[1, 0, 0], [1, 1]],
-    [[1, 0, 1], [1, 0]],
-    [[1, 1, 0], [1, 0]],
-    [[1, 1, 1], [0, 1]]
-])
+cman = Caseman(lambda: data_set, 0.1, 0.1)
 
-inputs = [c[0] for c in data_set]
-input_1 = tf.placeholder(tf.float32, shape=[None, 3], name="input_1")
+dims = [10, 16, 6, 2]
 
-targets = [c[1] for c in data_set]
-target = tf.placeholder(tf.float32, shape=[None, 2], name="target")
+prefered_accuracy = 0.95
 
+print("Acuuracy should be: ", prefered_accuracy)
 
-weights_1 = tf.Variable(np.random.uniform(-.1, .1, size=[3, 2]), dtype=tf.float32, name="weights_1")
-biases_1 = tf.Variable(np.random.uniform(-.1, .1, size=[1, 2]), dtype=tf.float32, name="biases_1")
+gann = Gann2(dims, cman,
+             loss_function=lambda labels, predictions: tf.losses.mean_squared_error(labels=labels,
+                                                                                    predictions=predictions),
+             output_activation_function=tf.nn.softmax,
+             hidden_activation_function=tf.nn.leaky_relu,
+             optimizer=tf.train.AdamOptimizer,
+             learning_rate=0.0035,
+             minibatch_size=10
+             )
 
-output_1 = tf.nn.elu(tf.matmul(input_1, weights_1) + biases_1, name="output_1")
+sess = tft.gen_initialized_session()
 
+gann.add_layer_summary(0, "weights", ["avg"])
+gann.add_layer_summary(2, "output", ["avg"])
 
-loss = tf.reduce_mean(tf.square(target - output_1))
-
-optimizer = tf.train.GradientDescentOptimizer(0.1)
-
-trainer = optimizer.minimize(loss=loss, name="backprop")
-
-sess = tf.Session()
-sess.run(tf.global_variables_initializer())
-
-for i in range(10):
-    results = sess.run([trainer, loss, weights_1], feed_dict={input_1: inputs[4:7], target: targets})
-
-
+gann.run(sess, 200, validation_interval=10)
+tft.close_session(sess)
