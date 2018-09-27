@@ -12,7 +12,7 @@ import numpy.random as npr
 
 # ****** SESSION HANDLING *******
 
-def gen_initialized_session(dir='probeview'):
+def gen_initialized_session(dir='summary'):
     sess = tf.Session()
     sess.summary_stream = viewprep(sess, dir=dir)  # Create a probe stream and attach to the session
     sess.viewdir = dir  # add a second slot, viewdir, to the session
@@ -22,14 +22,14 @@ def gen_initialized_session(dir='probeview'):
 
 def copy_session(sess1):
     sess2 = tf.Session()
-    sess2.probe_stream = sess1.probe_stream
-    sess2.probe_stream.reopen()
+    sess2.summary_stream = sess1.summary_stream
+    sess2.summary_stream.reopen()
     sess2.viewdir = sess1.viewdir
     return sess2
 
 
 def close_session(sess, view=True):
-    sess.probe_stream.close()
+    sess.summary_stream.close()
     sess.close()
     if view: fireup_tensorboard(sess.viewdir)
 
@@ -47,7 +47,7 @@ def tfeval(operators):
 
 # This creates the main data for tensorboard viewing: the graph and variable histories.
 
-def viewprep(session, dir='probeview', flush=120, queue=10):
+def viewprep(session, dir='summary', flush=120, queue=10):
     #clear_tensorflow_log(dir)  # Without this, the directory fills up with unusable files
     return tf.summary.FileWriter(dir, session.graph, flush_secs=flush, max_queue=queue)
 
@@ -386,7 +386,7 @@ def segmented_vector_string(v, pre='** ', post=' **'):
 
 # ***** PRIMITIVE DATA VIEWING ******
 
-def show_results(grabbed_vals, grabbed_vars=None, dir='probeview'):
+def show_results(grabbed_vals, grabbed_vars=None, dir='summary'):
     showvars(grabbed_vals, names=[x.name for x in grabbed_vars], msg="The Grabbed Variables:")
 
 
