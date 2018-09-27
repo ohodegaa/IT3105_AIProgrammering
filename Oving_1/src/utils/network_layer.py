@@ -22,9 +22,33 @@ class NetworkLayer():
     # Builds a layer in the network
     def build_layer(self):
         w_0, w_1 = self.init_weight_range
-        self.weights = tf.Variable(np.random.uniform(w_0, w_1, size=(self.input_size, self.output_size)), name=self.name + '_weight', dtype=tf.float64)
+        self.weights = tf.Variable(np.random.uniform(w_0, w_1, size=(self.input_size, self.output_size)),
+                                   name=self.name + '_weight', dtype=tf.float64)
         self.biases = tf.Variable(np.random.uniform(w_0, w_1, size=self.output_size),
                                   name=self.name + '_bias', dtype=tf.float64)
-        self.output_variable = self.activation_function(tf.matmul(self.input_variable, self.weights) + self.biases,
-                                                        name=self.name + '_output')
+        linear = tf.matmul(self.input_variable, self.weights) + self.biases
+
+        self.output_variable = self.activation_function(linear, name=self.name + '_output')
         self.an_network.add_layer(self)
+
+    def get_var(self, type):  # type = (in,out,wgt,bias)
+        return {'input': self.input_variable,
+                'output': self.output_variable,
+                'weights': self.weights,
+                'biases': self.biases}[type]
+
+    # spec, a list, can contain one or more of (avg,max,min,hist); type = (input, output, weights, biases)
+    def gen_summary(self, var_name, spec):
+        var = self.get_var(var_name)
+        base_name = self.name + '_' + var_name
+        with tf.name_scope('summary_'):
+            if ('avg' in spec) or ('stdev' in spec):
+                avg = tf.reduce_mean(var)
+            if 'avg' in spec:
+                tf.summary.scalar(base_name + '/avg/', avg)
+            if 'max' in spec:
+                tf.summary.scalar(base_name + '/max/', tf.reduce_max(var))
+            if 'min' in spec:
+                tf.summary.scalar(base_name + '/min/', tf.reduce_min(var))
+            if 'hist' in spec:
+                tf.summary.histogram(base_name + '/hist/', var)
