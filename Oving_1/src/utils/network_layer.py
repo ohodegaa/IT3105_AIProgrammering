@@ -31,18 +31,17 @@ class NetworkLayer():
         self.output_variable = self.activation_function(linear, name=self.name + '_output')
         self.an_network.add_layer(self)
 
-    def get_var(self, type):  # type = (in,out,wgt,bias)
+    def get_var(self, type):
         return {'input': self.input_variable,
                 'output': self.output_variable,
                 'weights': self.weights,
                 'biases': self.biases}[type]
 
-    # spec, a list, can contain one or more of (avg,max,min,hist); type = (input, output, weights, biases)
     def gen_summary(self, var_name, spec):
         var = self.get_var(var_name)
         base_name = self.name + '_' + var_name
         with tf.name_scope('summary_'):
-            if ('avg' in spec) or ('stdev' in spec):
+            if ('avg' in spec):
                 avg = tf.reduce_mean(var)
             if 'avg' in spec:
                 tf.summary.scalar(base_name + '/avg/', avg)
