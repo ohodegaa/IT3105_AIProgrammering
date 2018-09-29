@@ -40,7 +40,8 @@ xcuserdata/**
 local.properties
 gradleBuild
 
-mnist-zip/
+**/mnist-zip/*train*
+**/mnist-zip/*test*
 venv/*
 graph*
 netsaver*
