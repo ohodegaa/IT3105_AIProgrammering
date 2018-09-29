@@ -48,7 +48,7 @@ def tfeval(operators):
 # This creates the main data for tensorboard viewing: the graph and variable histories.
 
 def viewprep(session, dir='summary', flush=120, queue=10):
-    #clear_tensorflow_log(dir)  # Without this, the directory fills up with unusable files
+    # clear_tensorflow_log(dir)  # Without this, the directory fills up with unusable files
     return tf.summary.FileWriter(dir, session.graph, flush_secs=flush, max_queue=queue)
 
 
@@ -177,7 +177,7 @@ def check_vector_symmetry(v):
 # This produces a set of symmetric vectors and appends the class label onto the end (for ease of use in ML).
 
 def gen_symvect_cases(vlen, count, label=1):
-    return [[gen_symmetric_vector(vlen), [1,0]] for i in range(count)]
+    return [[gen_symmetric_vector(vlen), [1, 0]] for i in range(count)]
 
 
 def gen_anti_symvect_cases(vlen, count, label=0):
@@ -447,8 +447,9 @@ def simple_scatter_plot(points, alpha=0.5, radius=3):
 # mirrors Hinton's original version is ['gray','white','black',None]
 
 def hinton_plot(matrix, maxval=None, maxsize=1, fig=None, trans=True, scale=True, title='Hinton plot',
-                colors=['gray', 'red', 'blue', 'white']):
+                colors=('gray', 'red', 'blue', 'white')):
     hfig = fig if fig else plt.figure()
+
     hfig.suptitle(title, fontsize=18)
     if trans: matrix = matrix.transpose()
     if maxval == None: maxval = np.abs(matrix).max()
@@ -472,8 +473,7 @@ def hinton_plot(matrix, maxval=None, maxsize=1, fig=None, trans=True, scale=True
         blob = plt.Rectangle(bottom_left, size, size, facecolor=color, edgecolor=colors[3])
         axes.add_patch(blob)
     axes.autoscale_view()
-    plt.draw()
-    plt.pause(.001)
+    plt.show()
 
 
 # This graphically displays a matrix with color codes for positive, negative, small positive and small negative,
