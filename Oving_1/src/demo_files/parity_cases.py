@@ -18,7 +18,7 @@ prefered_accuracy = 0.95
 
 print("Acuuracy should be: ", prefered_accuracy)
 
-gann = Gann2(dims, cman,
+gann = Gann2(dims, cman, top_k=1,
              loss_function=lambda labels, predictions: tf.losses.mean_squared_error(labels=labels,
                                                                                     predictions=predictions),
              output_activation_function=tf.nn.softmax,
@@ -31,8 +31,8 @@ gann = Gann2(dims, cman,
 
 sess = tft.gen_initialized_session()
 
-gann.add_layer_summary(0, "weights", ["avg"])
-gann.add_layer_summary(2, "output", ["avg"])
+gann.add_summary(0, "weights", ["avg"])
+gann.add_summary(2, "output", ["avg"])
 
 gann.run(sess, 250, validation_interval=10)
 tft.close_session(sess)

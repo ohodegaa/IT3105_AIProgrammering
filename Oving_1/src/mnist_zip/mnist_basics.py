@@ -21,8 +21,7 @@ def kd_reduce(func,seq):
 # Set this to the complete path to your mnist files.
 ## __mnist_path__ = "path/to/all/your/mnist/files"
 ## __mnist_path__ = "/Users/keithd/core/python/data/mnist/basics/"
-__mnist_path__ = os.getcwd() + "/mnist-zip/"
-
+__mnist_path__ = os.getcwd() + '/'
 
 
 # The load_mnist function is the main interface between the MNIST files and your machine-learning code.  It fetches
@@ -43,6 +42,9 @@ __mnist_path__ = os.getcwd() + "/mnist-zip/"
 # subset, and the remaining two dimensions are those of the rows and columns of each image.
 # 2) labels - a 2-dimensional numpy array whose first dimension is the number of images in subset and whose second
 # dimension is always 1.   Check it out by calling and examining the results.
+
+def from_int_to_list(input, num):
+    return input, [1 if i == num else 0 for i in range(10)]
 
 def load_mnist(dataset="training", digits=numpy.arange(10), path= __mnist_path__):
 
@@ -155,6 +157,11 @@ def load_cases(filename,dir=__mnist_path__,nested=True):
 # all_flat_mnist_training_cases or all_flat_mnist_testing_files
 
 def load_all_flat_cases(type='training',dir=__mnist_path__,unify=False):
+    cases = _load_all_flat_cases(type, dir, unify)
+    return list(map(lambda el: from_int_to_list(el[0], el[1]), list(zip(*cases))))
+
+
+def _load_all_flat_cases(type='training',dir=__mnist_path__,unify=False):
     pair = load_flat_cases('all_flat_mnist_'+type+'_cases',dir=dir)
     if unify: return unify_cases(pair[0],pair[1])
     else: return pair[0],pair[1]
