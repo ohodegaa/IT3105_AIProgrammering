@@ -1,5 +1,5 @@
 import tensorflow as tf
-import tflowtools as tft
+import utils.tflowtools as tft
 from utils.preparation_data import glass, iris, mnist, wine, yeast
 
 

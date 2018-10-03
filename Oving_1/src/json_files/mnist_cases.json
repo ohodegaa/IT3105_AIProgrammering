@@ -1,7 +1,7 @@
 {
   "case_name": "mnist_cases",
   "case_config": {
-    "count": 6000
+    "count": 500
   },
   "validation_fraction": 0.1,
   "test_fraction": 0.1,

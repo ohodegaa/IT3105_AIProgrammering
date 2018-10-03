@@ -11,17 +11,17 @@
   "test_fraction": 0.1,
   "case_fraction": 1.0,
 
-  "layer_sizes": [15, 10, 16],
+  "layer_sizes": [15, 100, 100, 16],
   "top_k": 1,
-  "learning_rate": 0.009,
+  "learning_rate": 0.0002,
   "init_weight_range": [-0.1, 0.1],
   "hidden_activation_function": "leaky_relu",
   "output_activation_function": "softmax",
   "loss_function": "mean_squared_error",
   "optimizer": "adam",
-  "minibatch_size": 10,
+  "minibatch_size": 15,
 
-  "epochs": 300,
+  "epochs": 800,
   "validation_interval": 10,
   "show_interval": 10
 

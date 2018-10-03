@@ -1,5 +1,10 @@
+import os
 import numpy as np
 from mnist_zip import mnist_basics as mn
+
+__data_files_path__ = os.getcwd() + "/../data_files/"
+__mnist_files_path__ = os.getcwd() + "/../mnist_zip/"
+
 
 def normalize(data: np.ndarray, index: int):
     column = data[:, index]
@@ -26,8 +31,8 @@ def preparation_normalize(data_list):
 
 
 def wine():
-    path = "/Users/olavskogen/Documents/OneDrive/Dokumenter/Skole/2018 Høst/AI Programmering/Innleveringer/IT3105_AIProgrammering/Oving_1/src/data_files"
-    data = open(path + "/winequality_red.txt", "r")
+    path = __data_files_path__
+    data = open(path + "winequality_red.txt", "r")
     data_list = []
     for line in data:
         x = line.split(";")
@@ -39,8 +44,8 @@ def wine():
 
 
 def glass():
-    path = "/Users/olavskogen/Documents/OneDrive/Dokumenter/Skole/2018 Høst/AI Programmering/Innleveringer/IT3105_AIProgrammering/Oving_1/src/data_files"
-    data = open(path + "/glass.txt", "r")
+    path = __data_files_path__
+    data = open(path + "glass.txt", "r")
     data_list = []
     for line in data:
         x = line.split(",")
@@ -53,8 +58,8 @@ def glass():
 
 
 def yeast():
-    path = "/Users/olavskogen/Documents/OneDrive/Dokumenter/Skole/2018 Høst/AI Programmering/Innleveringer/IT3105_AIProgrammering/Oving_1/src/data_files"
-    data = open(path + "/yeast.txt", "r")
+    path = __data_files_path__
+    data = open(path + "yeast.txt", "r")
     data_list = []
     for line in data:
         x = line.split(",")
@@ -66,10 +71,9 @@ def yeast():
     return preparation_normalize(data_list)
 
 
-
 def iris():
-    path = "/Users/olavskogen/Documents/OneDrive/Dokumenter/Skole/2018 Høst/AI Programmering/Innleveringer/IT3105_AIProgrammering/Oving_1/src/data_files"
-    data = open(path + "/iris.txt", "r")
+    path = __data_files_path__
+    data = open(path + "iris.txt", "r")
     data_list = []
     for line in data:
         x = line.split(",")
@@ -92,12 +96,9 @@ def iris():
 
 def mnist(count):
     data_set = mn.load_all_flat_cases(
-        dir='/Users/olavskogen/Documents/OneDrive/Dokumenter/Skole/2018 Høst/AI Programmering/'
-            'Innleveringer/IT3105_AIProgrammering/Oving_1/src/mnist_zip/')[0:count]
+        dir=__mnist_files_path__)[0:count]
 
     for i in range(0, len(data_set)):
         data_set[i] = (np.divide(np.array(data_set[i][0]), 256), np.array(data_set[i][1]))
 
-
     return data_set
-

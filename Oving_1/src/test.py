@@ -65,7 +65,7 @@ gann = Gann2(dims, cman, top_k=1,
              output_activation_function=tf.nn.softmax,
              hidden_activation_function=tf.nn.leaky_relu,
              optimizer=tf.train.AdamOptimizer,
-             learning_rate=0.003,
+             learning_rate=0.0035,
              minibatch_size=10
              )
 

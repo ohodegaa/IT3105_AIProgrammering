@@ -177,6 +177,7 @@ class Gann2:
         :param dir: path to the directory which to store the session summaries
         :return: None
         """
+        print("Training network...")
         session = sess if sess else tft.gen_initialized_session(dir)
         self.merge_summaries()
         self.train_network(session, self.caseman.get_training_cases(), epochs)
@@ -254,7 +255,7 @@ class Gann2:
     """   Testing network   """
 
     def test_on_trains(self, sess):
-        cases = self.caseman.get_testing_cases()
+        cases = self.caseman.get_training_cases()
         self.test_network(sess, cases, msg="Testing on training set", step=self.global_training_step, stream="testing")
 
     def test_network(self, sess, cases, msg="Testing", step=None, stream="testing"):
