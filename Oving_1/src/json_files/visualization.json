@@ -1,0 +1,15 @@
+{
+  "hinton": [
+    [["input", 0, "output", "target"], ["", "output", "", ""]],
+    [0, ["input", "weights", "output"]]
+  ],
+  "dendogram": [0],
+  "summary": [
+    [0, "weight", ["avg", "max", "min"]],
+    [0, "weight", ["avg", "max", "min"]],
+    [0, "weight", ["avg", "max", "min"]],
+    [0, "bias", ["avg", "max", "min"]],
+    [0, "input", ["avg", "max", "min"]],
+    [0, "output", ["avg", "max", "min"]]
+  ]
+}
