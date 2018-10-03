@@ -32,10 +32,12 @@ class NetworkLayer():
         self.an_network.add_layer(self)
 
     def get_var(self, type):
-        return {'input': self.input_variable,
-                'output': self.output_variable,
-                'weights': self.weights,
-                'biases': self.biases}[type]
+        return {
+            'input': self.input_variable,
+            'output': self.output_variable,
+            'weights': self.weights,
+            'biases': self.biases
+        }[type]
 
     def gen_summary(self, var_name, spec):
         var = self.get_var(var_name)
@@ -44,10 +46,10 @@ class NetworkLayer():
             if ('avg' in spec):
                 avg = tf.reduce_mean(var)
             if 'avg' in spec:
-                tf.summary.scalar(base_name + '/avg/', avg)
+                return tf.summary.scalar(base_name + '/avg/', avg)
             if 'max' in spec:
-                tf.summary.scalar(base_name + '/max/', tf.reduce_max(var))
+                return tf.summary.scalar(base_name + '/max/', tf.reduce_max(var))
             if 'min' in spec:
-                tf.summary.scalar(base_name + '/min/', tf.reduce_min(var))
+                return tf.summary.scalar(base_name + '/min/', tf.reduce_min(var))
             if 'hist' in spec:
-                tf.summary.histogram(base_name + '/hist/', var)
+                return tf.summary.histogram(base_name + '/hist/', var)
