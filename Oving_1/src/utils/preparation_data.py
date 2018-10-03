@@ -90,10 +90,10 @@ def iris():
     return preparation_normalize(data_list)
 
 
-def mnist(length):
+def mnist(count):
     data_set = mn.load_all_flat_cases(
         dir='/Users/olavskogen/Documents/OneDrive/Dokumenter/Skole/2018 Høst/AI Programmering/'
-            'Innleveringer/IT3105_AIProgrammering/Oving_1/src/mnist_zip/')[0:length]
+            'Innleveringer/IT3105_AIProgrammering/Oving_1/src/mnist_zip/')[0:count]
 
     for i in range(0, len(data_set)):
         data_set[i] = (np.divide(np.array(data_set[i][0]), 256), np.array(data_set[i][1]))
