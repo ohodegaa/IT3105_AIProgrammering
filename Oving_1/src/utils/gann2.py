@@ -5,7 +5,7 @@ from utils.network_layer import NetworkLayer
 import utils.tflowtools as tft
 import numpy as np
 import matplotlib.pyplot as plt
-from utils.image_plotter import draw_scatter, draw_error_vs_validation, draw_hinton_plot
+from utils.image_plotter import draw_scatter, draw_error_vs_validation, draw_hinton_plot, draw_dendrogram
 
 
 class Gann2:
@@ -51,13 +51,24 @@ class Gann2:
         self.layers = []
 
         self.fetched_vars = []
-        self.fetched_var_figures = []
-        self.summary_vars = None
+        self.batch_summaries = []
+        self.validation_summaries = []
+
+        self.dendrogram_vars = []
+        self.dendrogram_image_placeholders = []
+        self.dendrogram_summaries = []
+
+        self.hinton_vars = []
+        self.hinton_image_placeholders = []
+        self.hinton_summaries = []
 
         self.global_training_step = 0
         self.minibatch_size = minibatch_size
         self.build_network()
         self.setup_training(top_k)
+        self.set_up_visualization()
+
+        self.summary_images = []
 
     """   Building network and set up training   """
 
@@ -101,7 +112,7 @@ class Gann2:
         self.output = layer.output_variable
 
         if self.output_activation_function is not None:
-            self.output = self.output_activation_function(self.output)
+            self.output = self.output_activation_function(self.output, name="Network_output")
 
         self.target = tf.placeholder(tf.float64, shape=(None, layer.output_size), name="Target")
 
@@ -146,6 +157,16 @@ class Gann2:
 
     """   Training network   """
 
+    def set_up_visualization(self):
+
+        """
+        hinton_image_tensor = draw_hinton_plot(val,
+                                               headline="Hinton plot, step %d" % step,
+                                               titles=[fetched_vars[i][j] for j in range(len(val))])
+        """
+
+        pass
+
     def run_training(self, sess=None, epochs=100, dir="summary"):
         """
 
@@ -173,14 +194,13 @@ class Gann2:
         :return: None
 
         """
-
+        first_dendrogram_shown = 0
         for i in range(epochs):
-            step = self.global_training_step + i + 1
+            step = self.global_training_step + i
             total_error = 0
             num_cases = len(cases)
             num_minibatches = math.ceil(num_cases / self.minibatch_size)
-
-            for case_start in range(0, num_cases, self.minibatch_size):
+            for j, case_start in enumerate(range(0, num_cases, self.minibatch_size)):
                 case_end = min(num_cases, case_start + self.minibatch_size)
                 minibatch = cases[case_start:case_end]
                 inputs = [c[0] for c in minibatch]
@@ -190,35 +210,54 @@ class Gann2:
                     self.target: targets,
                     self.case_length: len(minibatch)
                 }
+
+                fetched_vars = {
+                    "error": self.error,
+                    "fetched": self.fetched_vars
+                }
+                if (step % self.show_interval == 0) and j == num_minibatches // 2:
+                    fetched_vars["dendrogram"] = self.dendrogram_vars
+                    fetched_vars["hinton"] = self.hinton_vars
+
                 _, fetched_values, _ = self.run_session(sess,
                                                         [self.trainer],
-                                                        fetched_vars=[self.error] + self.fetched_vars,
-                                                        summary_vars=self.summary_vars,
+                                                        fetched_vars=fetched_vars,
+                                                        summary_vars=self.batch_summaries,
                                                         feed_dict=feed_dict,
-                                                        step=step)
+                                                        step=step,
+                                                        stream="training"
+                                                        )
+                if "dendrogram" in fetched_values and len(fetched_values["dendrogram"]) > 0:
+                    self.generate_dendrograms(fetched_values["dendrogram"], sess, step)
+                if "hinton" in fetched_values and len(fetched_values["hinton"]) > 0:
+                    self.generate_hintons(fetched_values["hinton"], sess, step)
 
-                total_error += fetched_values[0]
+                total_error += fetched_values["error"]
+
             self.error_history.append((step, total_error / num_minibatches))
             self.maybe_run_validation(sess, step)
-
             if self.show_interval and (step % self.show_interval == 0):
-                self.show_fetched_vars(sess, fetched_values[1:], self.fetched_vars, step=step)
-        self.global_training_step += epochs
-        self.add_summary_plots(sess)
+                if len(self.fetched_vars) > 0:
+                    self.show_fetched_vars(sess, fetched_values["fetched"], self.fetched_vars, "training", step=step)
+
+                # if len(self.dendro_vars) > 0:
+                # self.generate_dendrograms(fetched_values[2], sess, step)
+        self.global_training_step = epochs
+        self.generate_summary_plots(sess)
 
     def maybe_run_validation(self, sess, step):
         if self.validation_interval and (step % self.validation_interval == 0):
             cases = self.caseman.get_validation_cases()
             if len(cases) > 0:
-                self.test_network(sess, cases, "Validation, step %d" % step, step=step)
+                self.test_network(sess, cases, "Validation, step %d" % step, step=step, stream="validation")
 
     """   Testing network   """
 
     def test_on_trains(self, sess):
-        cases = self.caseman.get_training_cases()
-        self.test_network(sess, cases, msg="Testing on training set")
+        cases = self.caseman.get_testing_cases()
+        self.test_network(sess, cases, msg="Testing on training set", step=self.global_training_step, stream="testing")
 
-    def test_network(self, sess, cases, msg="Testing", step=None):
+    def test_network(self, sess, cases, msg="Testing", step=None, stream="testing"):
         """
         Runs through the network once with training turned off. To not do any training
         it is important to run the session without the training-operation, just the
@@ -242,8 +281,14 @@ class Gann2:
         operations = [self.error, self.accuracy]
         operation_names = ["Error", "Accuracy"]
 
-        results, _, _ = self.run_session(sess, operations, self.fetched_vars,
-                                         feed_dict=feed_dict)
+        results, fetched_vals, _ = self.run_session(sess,
+                                                    operations,
+                                                    fetched_vars=self.fetched_vars,
+                                                    summary_vars=self.validation_summaries,
+                                                    feed_dict=feed_dict,
+                                                    stream=stream,
+                                                    step=step
+                                                    )
         print(msg + ":")
 
         for res, name in zip(results, operation_names):
@@ -258,7 +303,7 @@ class Gann2:
         topk_tensor = tf.nn.in_top_k(predictions=prediction, targets=target, k=k)
         return topk_tensor
 
-    def run_session(self, session, operations, fetched_vars=None, summary_vars=None, dir="summary",
+    def run_session(self, session, operations, fetched_vars=None, summary_vars=None, stream="training",
                     feed_dict=None, step=1):
         """
 
@@ -274,14 +319,16 @@ class Gann2:
         """
         if summary_vars is not None:
             results = session.run([operations, fetched_vars, summary_vars], feed_dict=feed_dict)
-            session.summary_stream.add_summary(results[2], global_step=step)
+            session.summary[stream].add_summary(results[2], global_step=step)
         else:
             results = session.run([operations, fetched_vars], feed_dict=feed_dict)
 
         return results[0], results[1], session
 
     def merge_summaries(self):
-        self.summary_vars = tf.summary.merge_all()
+        self.batch_summaries = tf.summary.merge(self.batch_summaries) if len(self.batch_summaries) > 0 else None
+        self.validation_summaries = tf.summary.merge(self.validation_summaries) if len(
+            self.validation_summaries) > 0 else None
 
     def run(self, sess=None, epochs=100, validation_interval=None, show_interval=None):
         plt.ion()
@@ -291,44 +338,85 @@ class Gann2:
         session.run(tf.global_variables_initializer())
         self.run_training(session, epochs)
         self.test_on_trains(sess)
+
         plt.ioff()
 
-    def show_fetched_vars(self, sess, fetched_vals, fetched_vars, step=1):
+    def show_fetched_vars(self, sess, fetched_vals, fetched_vars, summary, step=1):
         for i, val in enumerate(fetched_vals):
-            if type(val) == list:
-                fig = draw_hinton_plot(val, headline="Hinton plot")
-                sum = tf.summary.image("Error vs validation", fig)
-                summary_vals = sess.run(sum)
-                sess.summary_stream.add_summary(summary_vals)
-            else:
+            if not isinstance(val, list) and not isinstance(val, np.ndarray):
                 msg = "Fetched variables at step " + str(step)
                 print("\n" + msg)
                 print("  >>> " + fetched_vars[i].name + " = ", val, end="\n\n")
 
-    def add_summary(self, *args, **kwds):
+    def add_summary(self, *args, only_validation=False):
         if isinstance(args[0], int):
-            self.add_summary_from_layer(*args, **kwds)
+            summary = self.get_summary_from_layer(*args)
         else:
-            self.add_summary_from_tensor(*args, **kwds)
+            summary = self.get_summary_from_tensor(*args)
+        if summary is not None:
+            self.validation_summaries.append(summary)
+            if not only_validation:
+                self.batch_summaries.append(summary)
 
-    def add_summary_from_tensor(self, var: tf.nn, type="scalar"):
+    def get_summary_from_tensor(self, var: tf.nn, type="scalar"):
         if type == "scalar":
-            tf.summary.scalar(var.name, var)
+            return tf.summary.scalar(var.name, var)
         elif type == "hist":
-            tf.summary.histogram(var.name, var)
+            return tf.summary.histogram(var.name, var)
         elif type == "image":
-            tf.summary.image(var.name, var)
+            return tf.summary.image(var.name, var)
 
-    def add_summary_from_layer(self, layer_index: int, var: str, spec):
-        self.layers[layer_index].gen_summary(var, spec)
+    def get_summary_from_layer(self, layer_index: int, var: str, spec):
+        return self.layers[layer_index].gen_summary(var, spec)
 
     def add_fetched_var(self, layer_index, val_type="weight"):
-        if type(val_type) == list:
-            self.fetched_vars.append([self.layers[layer_index].get_var(val_type[i]) for i in range(len(val_type))])
+        if isinstance(val_type, list):
+            if isinstance(layer_index, list):
+                pass
+            else:
+                self.fetched_vars.append([self.layers[layer_index].get_var(val_type[i]) for i in range(len(val_type))])
         else:
             self.fetched_vars.append(self.layers[layer_index].get_var(val_type))
 
-    def add_summary_plots(self, sess):
+    def add_dendrogram(self, layer_index):
+        self.dendrogram_vars.append(
+            (self.layers[layer_index].get_var("output"), self.target))
+        placeholder = tf.placeholder(tf.string, None, "Dendrogram_image_placeholder")
+        self.dendrogram_image_placeholders.append(placeholder)
+
+        decoded_demdrogram = tf.image.decode_png(placeholder, channels=3)
+        decoded_demdrogram = tf.expand_dims(decoded_demdrogram, 0, name="Dendrogram")
+        self.dendrogram_summaries.append(
+            tf.summary.image("Dendrogram_layer_%d" % layer_index, decoded_demdrogram, max_outputs=500))
+
+    def add_hinton(self, layer_index, val_type):
+        if isinstance(layer_index, list):
+            if len(layer_index) != len(val_type):
+                print("Layer indices must be same length as val_types")
+                exit()
+            var_list = []
+            types = {
+                "output": tf.nn.tanh(self.output, name="Output"),
+                "input": tf.nn.tanh(self.input, name="Input"),
+                "target": tf.nn.tanh(self.target, name="Target")
+            }
+            for i in range(len(layer_index)):
+                if isinstance(layer_index[i], int):
+                    var = self.layers[layer_index[i]].get_var(val_type[i])
+                    var_list.append(tf.nn.tanh(var, name="Layer_%d_%s" % (layer_index[i], val_type[i])))
+                else:
+                    var_list.append(types[layer_index[i]])
+            self.hinton_vars.append(var_list)
+        else:
+            self.hinton_vars.append([self.layers[layer_index].get_var(val_type[i]) for i in range(len(val_type))])
+
+        placeholder = tf.placeholder(tf.string, None, "Hinton_image_placehodler")
+        self.hinton_image_placeholders.append(placeholder)
+        decoded_hinton = tf.image.decode_png(placeholder, channels=3)
+        decoded_hinton = tf.expand_dims(decoded_hinton, 0)
+        self.hinton_summaries.append(tf.summary.image("Hinton", decoded_hinton))
+
+    def generate_summary_plots(self, sess):
         summaries = []
         if len(self.error_history) > 0:
             error_img = draw_scatter(self.error_history, "r")
@@ -344,4 +432,29 @@ class Gann2:
 
         summaries = tf.summary.merge(summaries)
         summary_vals = sess.run(summaries)
-        sess.summary_stream.add_summary(summary_vals)
+        sess.summary["testing"].add_summary(summary_vals, self.global_training_step)
+
+    def generate_dendrograms(self, dendro_vals, sess, step=0):
+        feed_dict = {}
+        with tf.name_scope("Dendrogram"):
+            for i in range(len(dendro_vals)):
+                features, labels = dendro_vals[i]
+                labels = [tft.bits_to_str(label) for label in labels]
+                labels = list(map(lambda x: x.replace(".", ""), labels))
+                image = draw_dendrogram(features, labels, title=self.dendrogram_summaries[i].name)
+                feed_dict[self.dendrogram_image_placeholders[i]] = image
+        summaries = tf.summary.merge(self.dendrogram_summaries)
+        summary_vals = sess.run(summaries, feed_dict=feed_dict)
+        sess.summary["dendrogram"].add_summary(summary_vals, step)
+
+    def generate_hintons(self, hinton_vals, sess, step=0):
+        feed_dict = {}
+        with tf.name_scope("Hinton"):
+            for i in range(len(hinton_vals)):
+                image = draw_hinton_plot(hinton_vals[i],
+                                         titles=[self.hinton_vars[i][j].name for j in range(len(self.hinton_vars[i]))],
+                                         step=step)
+                feed_dict[self.hinton_image_placeholders[i]] = image
+        summaries = tf.summary.merge(self.hinton_summaries)
+        summary_vals = sess.run(summaries, feed_dict=feed_dict)
+        sess.summary["hinton"].add_summary(summary_vals, step)

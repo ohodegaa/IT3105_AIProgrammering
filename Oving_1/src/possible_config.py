@@ -8,7 +8,7 @@ make the gann highly general in case of which loss function to use
 """
 
 
-loss_functions = [
+loss_functions = {
     lambda labels, predictions: tf.losses.mean_squared_error(labels=labels, predictions=predictions),
     lambda labels, predictions: tf.losses.absolute_difference(labels=labels, predictions=predictions),
     lambda labels, predictions: -tf.losses.softmax_cross_entropy(onehot_labels=labels, logits=predictions),
@@ -17,7 +17,8 @@ loss_functions = [
     lambda labels, predictions: tf.losses.huber_loss(labels=labels, predictions=predictions),
     lambda labels, predictions: tf.losses.mean_pairwise_squared_error(labels=labels, predictions=predictions),
     lambda labels, predictions: tf.losses.sigmoid_cross_entropy(multi_class_labels=labels, logits=predictions),
-]
+    lambda labels, predictions: tf.nn.softmax_cross_entropy_with_logits_v2(labels=labels, logits=predictions)
+}
 
 output_activation_functions = [
     tf.nn.relu,
@@ -50,3 +51,7 @@ optimizers = [
     tf.train.AdamOptimizer,
     tf.train.FtrlOptimizer,
 ]
+
+case_sets = {
+
+}
