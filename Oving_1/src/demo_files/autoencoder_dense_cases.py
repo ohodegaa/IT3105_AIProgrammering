@@ -12,13 +12,13 @@ data_set = tft.gen_dense_autoencoder_cases(2000, 8, (0.4, 0.7))
 
 cman = Caseman(lambda: data_set, 0.1, 0.1)
 
-dims = [8, 3, 8]
+dims = [8, 100, 100, 8]
 
 prefered_accuracy = 0.95
 
 print("Acuuracy should be: ", prefered_accuracy)
 
-gann = Gann2(dims, cman,
+gann = Gann2(dims, cman, top_k=1,
              loss_function=lambda labels, predictions: tf.losses.mean_squared_error(labels=labels,
                                                                                     predictions=predictions),
              output_activation_function=tf.nn.softmax,
@@ -31,8 +31,8 @@ gann = Gann2(dims, cman,
 
 sess = tft.gen_initialized_session()
 
-gann.add_layer_summary(0, "weights", ["avg"])
-gann.add_layer_summary(1, "output", ["avg"])
+gann.add_summary(0, "weights", ["avg"])
+gann.add_summary(1, "output", ["avg"])
 
-gann.run(sess, 20, validation_interval=10)
+gann.run(sess, 200, validation_interval=10)
 tft.close_session(sess)
