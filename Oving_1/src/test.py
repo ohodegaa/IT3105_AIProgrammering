@@ -1,7 +1,7 @@
 import tensorflow as tf
 from utils import tflowtools as tft
 from utils.caseman import Caseman
-from utils.gann2 import Gann2
+from utils.gann import Gann
 import json
 from utils.image_plotter import draw_dendrogram
 
@@ -59,15 +59,15 @@ tft.close_session(sess)
 
 """
 
-gann = Gann2(dims, cman, top_k=1,
-             loss_function=lambda labels, predictions: tf.losses.mean_squared_error(labels=labels,
+gann = Gann(dims, cman, top_k=1,
+            loss_function=lambda labels, predictions: tf.losses.mean_squared_error(labels=labels,
                                                                                     predictions=predictions),
-             output_activation_function=tf.nn.softmax,
-             hidden_activation_function=tf.nn.leaky_relu,
-             optimizer=tf.train.AdamOptimizer,
-             learning_rate=0.0035,
-             minibatch_size=10
-             )
+            output_activation_function=tf.nn.softmax,
+            hidden_activation_function=tf.nn.leaky_relu,
+            optimizer=tf.train.AdamOptimizer,
+            learning_rate=0.0035,
+            minibatch_size=10
+            )
 
 sess = tft.gen_initialized_session()
 gann.add_summary(gann.error, only_validation=False)

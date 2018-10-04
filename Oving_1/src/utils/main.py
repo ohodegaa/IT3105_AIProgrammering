@@ -2,7 +2,7 @@ import subprocess
 import time
 import os
 import json
-from utils.gann2 import Gann2
+from utils.gann import Gann
 from utils.caseman import Caseman
 from utils import tflowtools as tft
 from possible_config import loss_functions, case_sets, hidden_activation_functions, output_activation_functions, \
@@ -16,16 +16,16 @@ def main(data, visuals):
                    vfrac=data["validation_fraction"],
                    tfrac=data["test_fraction"],
                    cfrac=data["case_fraction"])
-    gann = Gann2(caseman=cman,
-                 layer_sizes=data["layer_sizes"],
-                 top_k=data["top_k"],
-                 learning_rate=data["learning_rate"],
-                 init_weight_range=data["init_weight_range"],
-                 hidden_activation_function=hidden_activation_functions[data["hidden_activation_function"]],
-                 output_activation_function=output_activation_functions[data["output_activation_function"]],
-                 loss_function=loss_functions[data["loss_function"]],
-                 optimizer=optimizers[data["optimizer"]],
-                 minibatch_size=data["minibatch_size"])
+    gann = Gann(caseman=cman,
+                layer_sizes=data["layer_sizes"],
+                top_k=data["top_k"],
+                learning_rate=data["learning_rate"],
+                init_weight_range=data["init_weight_range"],
+                hidden_activation_function=hidden_activation_functions[data["hidden_activation_function"]],
+                output_activation_function=output_activation_functions[data["output_activation_function"]],
+                loss_function=loss_functions[data["loss_function"]],
+                optimizer=optimizers[data["optimizer"]],
+                minibatch_size=data["minibatch_size"])
 
     sess = tft.gen_initialized_session()
     if visuals:
@@ -64,7 +64,7 @@ def stop(pipe):
 def ask_for_visualization():
     tb = input("Vise i tensorboard (y/n)?")
     if tb == "y":
-        with open("../json_files/visualization.json") as file:
+        with open("../case_config/visualization.json") as file:
             data = json.load(file)
         _visuals = []
         print("Hvilke visualiseringer vil du ha?")
@@ -90,7 +90,7 @@ def ask_for_case_set():
 
     print(file_name)
 
-    with open("../json_files/" + file_name + ".json") as file:
+    with open("../case_config/" + file_name + ".json") as file:
         return json.load(file)
 
 
