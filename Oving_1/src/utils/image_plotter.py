@@ -78,6 +78,7 @@ def draw_dendrogram(features, labels, metric='euclidean', mode='average', title=
                     lrot=90.0):
     fig = tfmpl.create_figure(figsize=(6, 10))
     ax = fig.add_subplot(111)
+    print(features)
     cluster_history = sch.linkage(features, method=mode, metric=metric)
     sch.dendrogram(cluster_history, labels=labels, orientation=orient, leaf_rotation=lrot, ax=ax)
     plt.tight_layout()

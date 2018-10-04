@@ -116,7 +116,7 @@ def all_one_hots(len, floats=False):
 
 
 # bits = list of 1's and 0's
-def bits_to_str(bits): return ''.join(map(str, bits))
+def bits_to_str(bits): return ''.join(map(lambda x: str(int(x)), bits))
 
 
 def str_to_bits(s): return [int(c) for c in s]
@@ -554,7 +554,7 @@ def gen_dim_reduced_data(feature_array, target_size, eigen_values, eigen_vectors
 # mode = single, average, complete, centroid, ward, median
 # metric = euclidean, cityblock (manhattan), hamming, cosine, correlation ... (see matplotlib distance.pdist for all 23)
 def dendrogram(features, labels, metric='euclidean', mode='average', ax=None, title='Dendrogram', orient='top',
-               lrot=90.0):
+               lrot=45.0):
     ax = ax if ax else plt.gca()
     cluster_history = sch.linkage(features, method=mode, metric=metric)
     sch.dendrogram(cluster_history, labels=labels, orientation=orient, leaf_rotation=lrot)

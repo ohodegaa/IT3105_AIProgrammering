@@ -234,10 +234,11 @@ class Gann2:
                     self.generate_hintons(fetched_values["hinton"], sess, step)
 
                 total_error += fetched_values["error"]
-
-            self.error_history.append((step, total_error / num_minibatches))
+            step_error = total_error / num_minibatches
+            self.error_history.append((step, step_error))
             self.maybe_run_validation(sess, step)
             if self.show_interval and (step % self.show_interval == 0):
+                print("  >>> Training error: %f" % step_error)
                 if len(self.fetched_vars) > 0:
                     self.show_fetched_vars(sess, fetched_values["fetched"], self.fetched_vars, "training", step=step)
 
@@ -365,7 +366,7 @@ class Gann2:
         elif type == "hist":
             return tf.summary.histogram(var.name, var)
         elif type == "image":
-            return tf.summary.image(var.name, var)
+            return tf.summary.image(var.name, var, max_outputs=1000)
 
     def get_summary_from_layer(self, layer_index: int, var: str, spec):
         return self.layers[layer_index].gen_summary(var, spec)
@@ -388,7 +389,7 @@ class Gann2:
         decoded_demdrogram = tf.image.decode_png(placeholder, channels=3)
         decoded_demdrogram = tf.expand_dims(decoded_demdrogram, 0, name="Dendrogram")
         self.dendrogram_summaries.append(
-            tf.summary.image("Dendrogram_layer_%d" % layer_index, decoded_demdrogram, max_outputs=500))
+            tf.summary.image("Dendrogram_layer_%d" % layer_index, decoded_demdrogram, max_outputs=1000))
 
     def add_hinton(self, layer_index, val_type):
         if isinstance(layer_index, list):
@@ -409,27 +410,27 @@ class Gann2:
                     var_list.append(types[layer_index[i]])
             self.hinton_vars.append(var_list)
         else:
-            self.hinton_vars.append([self.layers[layer_index].get_var(val_type[i]) for i in range(len(val_type))])
+            self.hinton_vars.append([tf.nn.tanh(self.layers[layer_index].get_var(val_type[i])) for i in range(len(val_type))])
 
         placeholder = tf.placeholder(tf.string, None, "Hinton_image_placehodler")
         self.hinton_image_placeholders.append(placeholder)
         decoded_hinton = tf.image.decode_png(placeholder, channels=3)
         decoded_hinton = tf.expand_dims(decoded_hinton, 0)
-        self.hinton_summaries.append(tf.summary.image("Hinton", decoded_hinton))
+        self.hinton_summaries.append(tf.summary.image("Hinton", decoded_hinton, max_outputs=1000))
 
     def generate_summary_plots(self, sess):
         summaries = []
         if len(self.error_history) > 0:
             error_img = draw_scatter(self.error_history, "r")
-            summaries.append(tf.summary.image('Error', error_img))
+            summaries.append(tf.summary.image('Error', error_img, max_outputs=1000))
 
             if len(self.validation_history) > 0:
                 error_vs_validation_img = draw_error_vs_validation(self.error_history, self.validation_history)
-                summaries.append(tf.summary.image("Error vs validation", error_vs_validation_img))
+                summaries.append(tf.summary.image("Error vs validation", error_vs_validation_img, max_outputs=1000))
 
         if len(self.accuracy_history) > 0:
             accuracy_img = draw_scatter(self.accuracy_history, "b")
-            summaries.append(tf.summary.image("Validation accuracy", accuracy_img))
+            summaries.append(tf.summary.image("Validation accuracy", accuracy_img, max_outputs=1000))
 
         summaries = tf.summary.merge(summaries)
         summary_vals = sess.run(summaries)

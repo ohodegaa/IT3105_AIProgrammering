@@ -10,7 +10,7 @@
 
   "layer_sizes": [10, 16, 16, 2],
   "top_k": 1,
-  "learning_rate": 0.0025,
+  "learning_rate": 0.0027,
   "init_weight_range": [-0.1, 0.1],
   "hidden_activation_function": "leaky_relu",
   "output_activation_function": "softmax",

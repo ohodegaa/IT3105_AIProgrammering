@@ -34,12 +34,13 @@ def wine():
     path = __data_files_path__
     data = open(path + "winequality_red.txt", "r")
     data_list = []
+    _max = -1.0
+    _min = 1000.0
     for line in data:
         x = line.split(";")
         inputs = list(map(lambda el: float(el), x[:-1]))
         target = [1 if int(x[-1]) == i else 0 for i in range(3, 9)]
         data_list.append([inputs, target])
-
     return preparation_normalize(data_list)
 
 

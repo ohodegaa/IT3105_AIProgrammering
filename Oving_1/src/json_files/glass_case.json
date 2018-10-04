@@ -9,15 +9,15 @@
 
   "layer_sizes": [9, 100, 100, 6],
   "top_k": 1,
-  "learning_rate": 0.1,
+  "learning_rate": 0.003,
   "init_weight_range": [-0.1, 0.1],
   "hidden_activation_function": "leaky_relu",
   "output_activation_function": "softmax",
   "loss_function": "mean_squared_error",
-  "optimizer": "gradient_descent",
-  "minibatch_size": 10,
+  "optimizer": "adam",
+  "minibatch_size": 100,
 
-  "epochs": 800,
+  "epochs": 600,
   "validation_interval": 10,
   "show_interval": 10
 

@@ -17,7 +17,7 @@
   "optimizer": "gradient_descent",
   "minibatch_size": 10,
 
-  "epochs": 200,
+  "epochs": 300,
   "validation_interval": 10,
   "show_interval": 10
 

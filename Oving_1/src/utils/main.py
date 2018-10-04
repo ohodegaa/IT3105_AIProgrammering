@@ -35,7 +35,7 @@ def main(data, visuals):
                     gann.add_hinton(*arg)
             elif key == "dendrogram":
                 for arg in args:
-                    gann.add_dendrogram(*arg)
+                    gann.add_dendrogram(arg)
             elif key == "summary":
                 for arg in args:
                     gann.add_summary(*arg)
