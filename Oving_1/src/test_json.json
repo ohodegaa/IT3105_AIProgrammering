@@ -1,0 +1,10 @@
+{
+  "hei1": "halla",
+  "hei2": [
+    "halla", "hade", "god morgen"
+  ],
+  "hei3": {
+    "objk1": null,
+    "objk2": true
+  }
+}

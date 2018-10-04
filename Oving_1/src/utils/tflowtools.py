@@ -14,7 +14,14 @@ import numpy.random as npr
 
 def gen_initialized_session(dir='summary'):
     sess = tf.Session()
-    sess.summary_stream = viewprep(sess, dir=dir)  # Create a probe stream and attach to the session
+    sess.summary = {
+        "training": viewprep(sess, dir=dir + "/training"),
+        "testing": viewprep(sess, dir=dir + "/testing"),
+        "validation": viewprep(sess, dir=dir + "/validation"),
+        "dendrogram": viewprep(sess, dir=dir + "/dendrogram"),
+        "hinton": viewprep(sess, dir=dir + "/hinton"),
+        "accuracy": viewprep(sess, dir=dir + "/accuracy")
+    }
     sess.viewdir = dir  # add a second slot, viewdir, to the session
     sess.run(tf.global_variables_initializer())
     return sess
@@ -29,7 +36,8 @@ def copy_session(sess1):
 
 
 def close_session(sess, view=True):
-    sess.summary_stream.close()
+    for stream in sess.summary.values():
+        stream.close()
     sess.close()
     if view: fireup_tensorboard(sess.viewdir)
 
@@ -62,7 +70,7 @@ def fireup_tensorboard(logdir, logwash=True):
 
 
 def clear_tensorflow_log(logdir):
-    os.system('rm ' + logdir + '/events.out.*')
+    os.system('rm -r ' + logdir)
 
 
 # ***** GENERATING Simple DATA SETS for MACHINE LEARNING *****
@@ -108,7 +116,7 @@ def all_one_hots(len, floats=False):
 
 
 # bits = list of 1's and 0's
-def bits_to_str(bits): return ''.join(map(str, bits))
+def bits_to_str(bits): return ''.join(map(lambda x: str(int(x)), bits))
 
 
 def str_to_bits(s): return [int(c) for c in s]
@@ -451,9 +459,12 @@ def hinton_plot(matrix, maxval=None, maxsize=1, fig=None, trans=True, scale=True
     hfig = fig if fig else plt.figure()
 
     hfig.suptitle(title, fontsize=18)
-    if trans: matrix = matrix.transpose()
-    if maxval == None: maxval = np.abs(matrix).max()
-    if not maxsize: maxsize = 2 ** np.ceil(np.log(maxval) / np.log(2))
+    if trans:
+        matrix = matrix.transpose()
+    if maxval == None:
+        maxval = np.abs(matrix).max()
+    if not maxsize:
+        maxsize = 2 ** np.ceil(np.log(maxval) / np.log(2))
 
     axes = hfig.gca()
     axes.clear()
@@ -543,7 +554,7 @@ def gen_dim_reduced_data(feature_array, target_size, eigen_values, eigen_vectors
 # mode = single, average, complete, centroid, ward, median
 # metric = euclidean, cityblock (manhattan), hamming, cosine, correlation ... (see matplotlib distance.pdist for all 23)
 def dendrogram(features, labels, metric='euclidean', mode='average', ax=None, title='Dendrogram', orient='top',
-               lrot=90.0):
+               lrot=45.0):
     ax = ax if ax else plt.gca()
     cluster_history = sch.linkage(features, method=mode, metric=metric)
     sch.dendrogram(cluster_history, labels=labels, orientation=orient, leaf_rotation=lrot)
