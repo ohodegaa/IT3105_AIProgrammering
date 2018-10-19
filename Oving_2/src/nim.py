@@ -1,56 +1,71 @@
+import copy
 
 
-class Nim():
+class Nim:
 
-    def __init__(self, N, K):
+    def __init__(self, N, K, max_rollouts, starting_player):
         # N = number of sticks on the board
         # K = number of sticks each player can remove
+        # starting_player = starting player
+        # max_rollouts = number of simulations done by MCTS
 
-        self.states = [(0, int(N))]
+        self.state = int(N)
+        self.player = 1 if starting_player == 2 else 2
         self.K = int(K)
-        self.player = 1
-        self.winner = None
+        # self.winner = None
 
+    def do_move(self, move: int):
+        self.state = self.state - move
+        self.player = 1 if self.player == 2 else 2
 
-    def add_state(self, move):
-        new_state = int(self.states[-1][1]) - int(move)
-        self.states.append((self.player, new_state))
-
-    def winning(self):
-        if int(self.states[-1][1]) == 0:
-            print("Spiller", self.player, "vinner!")
-            self.winner = True
-
-    def switch_player(self):
-        if self.player == 1:
-            self.player = 2
-        else:
-            self.player = 1
-
-    def next_legal_moves(self, state):
+    def get_moves(self):
         legal_moves = []
-        state = state[-1][1]
-        for move in range(1, self.K + 1):
-            if move <= state:
-                legal_moves.append(move)
+        for move in range(1, min([self.K, self.state]) + 1):
+            legal_moves.append(move)
         return legal_moves
 
-    def next_legal_states(self, state):
-        legal_states = []
-        player = state[0]
-        if player == 1:
-            player = 2
+    def clone(self):
+        return copy.deepcopy(self)
+
+    def get_result(self, p):
+        assert self.state == 0
+        if self.player == p:
+            return 1
         else:
-            player = 1
-        state = int(state[1])
-        for move in range(1, self.K + 1):
-            if move <= state:
-                new_state = state - move
-                legal_states.append((player, new_state))
-        return legal_states
+            return 0
+
+    def get_next_player(self):
+        return 1 if self.player == 2 else 2
 
 
-    def get_state(self):
-        return self.states
+"""
+def add_state(self, new_state):
+    self.state.append(new_state)
+def get_next_state(self, state, move):
+    return state - move
+
+def winning(self):
+    if int(self.states[-1][1]) == 0:
+        print("Spiller", self.player, "vinner!")
+        self.winner = True
+
+def switch_player(self):
+    if self.player == 1:
+        self.player = 2
+    else:
+        self.player = 1
 
 
+def get_legal_states(self, state, player=None):
+    # player = self.player if player is None else player
+    legal_states = []
+    for move in range(1, self.K + 1):
+        if move <= state:
+            new_state = state - move
+            legal_states.append(new_state)
+    return legal_states
+
+def get_states(self):
+    return self.states
+
+"""

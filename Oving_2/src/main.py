@@ -1,5 +1,4 @@
-from IT3105_AIProgrammering.Oving_2.src.nim import Nim
-
+from nim import Nim
 
 def setup_game():
     N = input("Hvilke størrelse på brettet ønsker du? (N) ")
