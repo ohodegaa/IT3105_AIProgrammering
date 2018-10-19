@@ -1,16 +1,22 @@
 import copy
+from random import choice
+
+max_number_of_players = 2
 
 
 class Nim:
 
-    def __init__(self, N, K, max_rollouts, starting_player):
+    def __init__(self, N, K, starting_player):
         # N = number of sticks on the board
         # K = number of sticks each player can remove
         # starting_player = starting player
         # max_rollouts = number of simulations done by MCTS
 
         self.state = int(N)
-        self.player = 1 if starting_player == 2 else 2
+        if not starting_player or starting_player not in range(1, max_number_of_players + 1):
+            self.player = choice(range(1, max_number_of_players + 1))
+        else:
+            self.player = 1 if starting_player == 2 else 2
         self.K = int(K)
         # self.winner = None
 
