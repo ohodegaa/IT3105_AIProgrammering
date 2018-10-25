@@ -3,7 +3,7 @@ from nim import Nim
 
 
 def setup_game():
-    n = ask_for_int("Hvilke størrelse på brettet ønsker du? (N) ")
+    n = ask_for_int("Hvilken størrelse på brettet ønsker du? (N) ")
     k = ask_for_int("Hvor mange brikker er lov å ta vekk i et trekk? (K) ")
     num_games = ask_for_int("Hvor mange runder ønsker du å spille? (G) ")
     verbose = ask_for_int("Vil du vise detalajene for alle trekkene i alle spillene? \n1. JA \n2. NEI ")

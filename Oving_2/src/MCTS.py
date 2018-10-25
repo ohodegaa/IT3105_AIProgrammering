@@ -33,7 +33,7 @@ class Node:
 
 class MonteCarlo:
 
-    def __init__(self, game: Nim, max_rollouts):
+    def __init__(self, game: Nim, max_rollouts: int):
         self.max_rollouts = max_rollouts
         self.root_node = Node(game=game)
         self.game = game
