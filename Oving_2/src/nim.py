@@ -44,34 +44,3 @@ class Nim:
         return 1 if self.player == 2 else 2
 
 
-"""
-def add_state(self, new_state):
-    self.state.append(new_state)
-def get_next_state(self, state, move):
-    return state - move
-
-def winning(self):
-    if int(self.states[-1][1]) == 0:
-        print("Spiller", self.player, "vinner!")
-        self.winner = True
-
-def switch_player(self):
-    if self.player == 1:
-        self.player = 2
-    else:
-        self.player = 1
-
-
-def get_legal_states(self, state, player=None):
-    # player = self.player if player is None else player
-    legal_states = []
-    for move in range(1, self.K + 1):
-        if move <= state:
-            new_state = state - move
-            legal_states.append(new_state)
-    return legal_states
-
-def get_states(self):
-    return self.states
-
-"""
