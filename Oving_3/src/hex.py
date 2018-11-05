@@ -1,41 +1,37 @@
-import copy
-from random import choice
-from board import Board
+from game_state import GameState
+from path_finder import PathFinder
 
 max_number_of_players = 2
 
+CELL_EMPTY = 0
+PLAYER_TOP = 1
+PLAYER_LEFT = 2
 
-class Hex:
+
+class Hex(GameState):
 
     def __init__(self, board_size=5, starting_player=1):
-        row_ranges = [x for x in range(1, board_size + 1)] + [y for y in range(board_size - 1, 0, -1)]
-        self.state = [[0 for _ in range(i)] for i in row_ranges]
+        super(Hex, self).__init__(starting_player)
 
-        if not starting_player or starting_player not in range(1, max_number_of_players + 1):
-            self.player = choice(range(1, max_number_of_players + 1))
-        else:
-            self.player = 1 if starting_player == 2 else 2
-        self.board = Board(self)
+        self.state = [[CELL_EMPTY for _ in range(board_size)] for _ in range(board_size)]
+        self.board_size = board_size
 
-    def do_move(self, move: tuple, show=False):
-        next_player = self.get_next_player()
-        self.state[move[0]][move[1]] = next_player
-        if show:
-            self.board.do_move(move, next_player)
-        self.player = 1 if self.player == 2 else 2
+    def do_move(self, move: tuple):
+
+        moving_player = self.get_next_player()
+        self.state[move[0]][move[1]] = moving_player
+        self.player = moving_player
 
     def get_moves(self):
         moves = []
-        for row in self.state:
-            for cell in row:
-                if cell > 0:
-                    moves.append(cell)
-
-    def clone(self):
-        return copy.deepcopy(self)
+        if self.get_result(self.player):
+            return []
+        for i in range(len(self.state)):
+            for j in range(len(self.state[i])):
+                if self.state[i][j] == 0:
+                    moves.append((i, j))
+        return moves
 
     def get_result(self, p):
-        pass
-
-    def get_next_player(self):
-        return 1 if self.player == 2 else 2
+        path_finder = PathFinder(self.state, p)
+        return int(path_finder.is_winner())

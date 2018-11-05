@@ -1,10 +1,10 @@
-from nim import Nim
 from random import choices, choice
 import math
+from game_state import GameState
 
 
 class Node:
-    def __init__(self, move=None, parent=None, game: Nim = None):
+    def __init__(self, move=None, parent=None, game: GameState = None):
         self.parent = parent
         self.move = move
         self.children = []
@@ -20,7 +20,7 @@ class Node:
                                      math.sqrt(2 * math.log(self.visits) / child.visits))[-1]
         return s
 
-    def add_child(self, move, game: Nim):
+    def add_child(self, move, game: GameState):
         child = Node(move, self, game=game)
         self.untried_moves.remove(move)
         self.children.append(child)
@@ -33,7 +33,7 @@ class Node:
 
 class MonteCarlo:
 
-    def __init__(self, game: Nim, max_rollouts: int):
+    def __init__(self, game: GameState, max_rollouts: int):
         self.max_rollouts = max_rollouts
         self.root_node = Node(game=game)
         self.game = game
@@ -55,18 +55,19 @@ class MonteCarlo:
             node.update(game.get_result(node.player))
             node = node.parent
 
-    def rollout(self, game: Nim):
+    def rollout(self, game: GameState):
+        # use NN here!!!
         while game.get_moves():
             game.do_move(choice(game.get_moves()))
 
-    def expand_node(self, node: Node, game: Nim):
+    def expand_node(self, node: Node, game: GameState):
         if node.untried_moves:
             move = choice(node.untried_moves)
             game.do_move(move)
             node = node.add_child(move, game)
         return node
 
-    def search_tree(self, root_node, game):
+    def search_tree(self, root_node, game: GameState):
         node = root_node
         while node.untried_moves == [] and node.children != []:
             node = node.select_child()
