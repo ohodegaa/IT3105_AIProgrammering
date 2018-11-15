@@ -1,20 +1,21 @@
 class PathFinder:
-    def __init__(self, state, player):
-        self.state = state
+    def __init__(self, game, player):
+        self.state = game.get_state()
+        self.game = game
         self.player = player
         self.visited = []
         self.queue = []
 
     def is_winner(self):
         for i in range(len(self.state)):
-            tup = (0, i) if self.player == 1 else (i, 0)
+            tup = (0, i) if self.player == self.game.PLAYER_TOP else (i, 0)
             if self.state[tup[0]][tup[1]] == self.player:
-                # print(tup[0], tup[1])
                 if self.is_path([tup]):
                     return True
         return False
 
     def is_path(self, queue):
+        # DFS
         if len(queue) > 0:
             pos = queue.pop()
             self.visited.append(pos)
@@ -25,7 +26,7 @@ class PathFinder:
         return False
 
     def winning_pos(self, pos):
-        return pos[0] == len(self.state) - 1 if self.player == 1 else pos[1] == len(self.state) - 1
+        return pos[0] == len(self.state) - 1 if self.player == self.game.PLAYER_TOP else pos[1] == len(self.state) - 1
 
     def get_next_positions(self, current):
         positions = []

@@ -1,6 +1,10 @@
 from MCTS import MonteCarlo
 from hex import Hex
 from board import Board
+from replay_buffer import ReplayBuffer
+from utils.gann import Gann
+import utils.tflowtools as tft
+import time
 
 
 def setup_game():
@@ -34,36 +38,76 @@ def display_results(results):
 
 def display_winning_player(player):
     print("\nPlayer {} wins".format(player))
+    print("\n=======================================\n")
+
+
+def init_gann(size, buffer):
+    return Gann(
+        layer_sizes=[size, 14, 28, size],
+        caseman=buffer,
+        top_k=1
+    )
 
 
 def main():
     # n, num_games, verbose, starting_player, max_rollouts = setup_game()
-    n, num_games, verbose, starting_player, max_rollouts = 5, 1, True, 1, 200
+    n, num_games, verbose, starting_player, max_rollouts = 5, 50, False, 1, 100
     results = []
+    save_interval = 50
     game_num = 1
+    viewer = None
+
+    ## NN
+    buffer = ReplayBuffer()
+    gann = init_gann(n * n, buffer)
+    sess = tft.gen_initialized_session()
+
     while num_games >= game_num:
+        game = Hex(n, starting_player)
+        viewer = Board(game)
+        while game.get_moves():
+            mc = MonteCarlo(game, max_rollouts)
+            mc.run(lambda _input: gann.get_best(sess, _input))
+            case = mc.get_training_case()
+            buffer.push(case)
+            next_move = mc.get_best_move()
+            game.do_move(next_move)
+            viewer.do_move(next_move, game.player)
+        gann.run(sess, epochs=100, do_testing=False, show_interval=5)
+        if game.get_result(game.player) == 1:
+            results.append(game.player)
+        game_num += 1
+
+    if viewer:
+        viewer.persist()
+
+
+if __name__ == '__main__':
+    main()
+
+"""
+
+_2 = time.time()
+print(_2 - _1)
+_1 = time.time()
+
+============================
         if verbose:
             print("Spill nr. {}\n".format(game_num))
         game = Hex(n, starting_player)
-        viewer = None
         if verbose:
             viewer = Board(game)
         while game.get_moves():
             mc = MonteCarlo(game, max_rollouts)
-            move = mc.run()
-            game.do_move(move)
+            root_node = mc.run()
+            
+            game.do_move(root_node.move)
             if verbose:
-                viewer.do_move(move, game.player)
-                display_move(game.player, move, game.state)
+                viewer.do_move(root_node.move, game.player)
+                display_move(game.player, root_node.move, game.state)
 
         if game.get_result(game.player) == 1:
             results.append(game.player)
         game_num += 1
         if verbose:
-            display_winning_player(game.player)
-            print("\n=======================================\n")
-    if viewer: viewer.persist()
-
-
-if __name__ == '__main__':
-    main()
+            display_winning_player(game.player)"""

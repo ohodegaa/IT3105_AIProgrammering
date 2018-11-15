@@ -216,7 +216,7 @@ class Gann:
                     "error": self.error,
                     "fetched": self.fetched_vars
                 }
-                if (step % self.show_interval == 0) and j == num_minibatches // 2:
+                if self.show_interval is not None and (step % self.show_interval == 0) and j == num_minibatches // 2:
                     fetched_vars["dendrogram"] = self.dendrogram_vars
                     fetched_vars["hinton"] = self.hinton_vars
 
@@ -322,26 +322,41 @@ class Gann:
         if summary_vars is not None:
             results = session.run([operations, fetched_vars, summary_vars], feed_dict=feed_dict)
             session.summary[stream].add_summary(results[2], global_step=step)
+        elif fetched_vars is None:
+            results = session.run([operations], feed_dict=feed_dict)
+            return results[0], session
         else:
             results = session.run([operations, fetched_vars], feed_dict=feed_dict)
 
         return results[0], results[1], session
 
     def merge_summaries(self):
-        self.batch_summaries = tf.summary.merge(self.batch_summaries) if len(self.batch_summaries) > 0 else None
-        self.validation_summaries = tf.summary.merge(self.validation_summaries) if len(
-            self.validation_summaries) > 0 else None
+        if self.batch_summaries is not None:
+            self.batch_summaries = tf.summary.merge(self.batch_summaries) if len(self.batch_summaries) > 0 else None
+            self.validation_summaries = tf.summary.merge(self.validation_summaries) if len(
+                self.validation_summaries) > 0 else None
 
-    def run(self, sess=None, epochs=100, validation_interval=None, show_interval=None):
+    def run(self, sess=None, epochs=100, validation_interval=None, show_interval=None, do_testing=True):
         plt.ion()
         self.validation_interval = validation_interval
         self.show_interval = show_interval
         session = sess if sess is not None else tft.gen_initialized_session()
         session.run(tf.global_variables_initializer())
         self.run_training(session, epochs)
-        self.test_on_trains(sess)
+        if do_testing:
+            self.test_on_trains(sess)
 
         plt.ioff()
+
+    def run_case(self, sess, _input):
+        result = self.run_session(sess, [self.output], fetched_vars=[self.output], feed_dict={self.input: [_input]})
+        return result[0][0][0]
+
+    def get_best(self, sess, _input):
+        result = self.run_case(sess, _input)
+        max_value = np.max(result)
+        i = result.tolist().index(max_value)
+        return i
 
     def show_fetched_vars(self, sess, fetched_vals, fetched_vars, summary, step=1):
         for i, val in enumerate(fetched_vals):
@@ -410,7 +425,8 @@ class Gann:
                     var_list.append(types[layer_index[i]])
             self.hinton_vars.append(var_list)
         else:
-            self.hinton_vars.append([tf.nn.tanh(self.layers[layer_index].get_var(val_type[i])) for i in range(len(val_type))])
+            self.hinton_vars.append(
+                [tf.nn.tanh(self.layers[layer_index].get_var(val_type[i])) for i in range(len(val_type))])
 
         placeholder = tf.placeholder(tf.string, None, "Hinton_image_placehodler")
         self.hinton_image_placeholders.append(placeholder)
