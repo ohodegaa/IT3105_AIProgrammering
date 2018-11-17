@@ -1,7 +1,8 @@
 from random import choices, choice
 import math
 from game_state import GameState
-import time
+import numpy as np
+
 
 class Node:
     def __init__(self, move=None, parent=None, game: GameState = None):
@@ -11,6 +12,7 @@ class Node:
         self.wins = 0
         self.visits = 0
         self.state = game.get_state()
+        self.next_player = game.get_next_player()
 
         self.untried_moves = game.get_moves()
         self.player = game.player
@@ -36,17 +38,45 @@ class Node:
 
     def get_training_case(self):
         feature = []
+        feature.append(self.player)
         target = []
-        _target = [[0.0 for _ in range(len(_row))] for _row in self.state]
+        _target = np.zeros((len(self.state), len(self.state)))
 
         for child in self.children:
             row, col = child.move
             _target[row][col] = child.get_statistics()
 
+        # normalization
+        tmax, tmin = _target.max(), _target.min()
+        _target = (_target - tmin) / (tmax - tmin)
+
         for i in range(len(self.state)):
             feature.extend(self.state[i][:])
             target.extend(_target[i])
-        return feature, target
+
+        return np.array(feature), np.array(target)
+
+    """
+        def get_training_case(self):
+            target = np.zeros((len(self.state), len(self.state)))
+    
+            for child in self.children:
+                row, col = child.move
+                target[row][col] = child.get_statistics()
+    
+            # normalization
+            tmax, tmin = target.max(), target.min()
+            target = (target - tmin) / (tmax - tmin)
+    
+            # to linear
+            _target = []
+            for i, row in enumerate(target):
+                _target.extend(row)
+    
+            feature = generate_feature(self.state, self.next_player)
+    
+            return np.array([feature, np.array(_target)])
+    """
 
     def __str__(self):
         return "Node: move: " + str(self.move)
@@ -54,7 +84,7 @@ class Node:
 
 class MonteCarlo:
 
-    def __init__(self, game: GameState, max_rollouts: int):
+    def __init__(self, game: GameState, max_rollouts: int, root: Node = None):
         self.max_rollouts = max_rollouts
         self.root_node = Node(game=game)
         self.game = game
@@ -72,7 +102,7 @@ class MonteCarlo:
         return self.root_node.get_training_case()
 
     def get_best_move(self):
-        return sorted(self.root_node.children, key=lambda c: c.visits)[-1].move  # should it be visits here or stat?
+        return sorted(self.root_node.children, key=lambda c: c.visits)[-1]  # should it be visits here or stat?
 
     def backpropagate(self, node, game):
         while node is not None:
@@ -80,17 +110,21 @@ class MonteCarlo:
             node = node.parent
 
     def rollout(self, game: GameState, get_best=None):
+        wrong_preds = 0
         while len(game.get_moves()) > 0:
             if get_best is not None:
-                linear_state = game.get_linear_state()
+                linear_state = generate_linear_feature(game.state, game.get_next_player())
                 next_move_index = get_best(linear_state)
                 next_move = game.index_to_move(next_move_index)
                 if next_move in game.get_moves():
                     game.do_move(next_move)
                 else:
+                    wrong_preds += 1
                     game.do_move(choice(game.get_moves()))
             else:
                 game.do_move(choice(game.get_moves()))
+
+        # print(wrong_preds)
 
     def expand_node(self, node: Node, game: GameState):
         if len(node.untried_moves) > 0:
@@ -105,3 +139,26 @@ class MonteCarlo:
             node = node.select_child()
             game.do_move(node.move)
         return node
+
+
+def generate_linear_feature(state, next_player):
+    feature = []
+    feature.append(next_player)
+
+    for i in range(len(state[:])):
+        feature.extend(state[i][:])
+
+    return np.array(feature)
+
+
+def generate_feature(state, next_player):
+    player1 = np.array(state)
+    player2 = np.array(state)
+    for i, row in enumerate(player1.tolist()):
+        for j, cell in enumerate(row):
+            player1[i][j] = 1 if player1[i][j] == -1 else 0
+            player2[i][j] = 1 if player2[i][j] == 1 else 0
+    player = np.ones((len(state), len(state))) if next_player == 1 else np.zeros(
+        (len(state), len(state)))
+    feature = np.array([player1, player2, player])
+    return feature

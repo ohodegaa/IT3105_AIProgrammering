@@ -195,7 +195,6 @@ class Gann:
         :return: None
 
         """
-        first_dendrogram_shown = 0
         for i in range(epochs):
             step = self.global_training_step + i
             total_error = 0
@@ -341,7 +340,6 @@ class Gann:
         self.validation_interval = validation_interval
         self.show_interval = show_interval
         session = sess if sess is not None else tft.gen_initialized_session()
-        session.run(tf.global_variables_initializer())
         self.run_training(session, epochs)
         if do_testing:
             self.test_on_trains(sess)

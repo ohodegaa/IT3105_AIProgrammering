@@ -1,10 +1,13 @@
+import math
+
 from MCTS import MonteCarlo
 from hex import Hex
 from board import Board
 from replay_buffer import ReplayBuffer
-from utils.gann import Gann
+from anet import ANET
 import utils.tflowtools as tft
 import time
+import tensorflow as tf
 
 
 def setup_game():
@@ -41,39 +44,44 @@ def display_winning_player(player):
     print("\n=======================================\n")
 
 
-def init_gann(size, buffer):
-    return Gann(
-        layer_sizes=[size, 14, 28, size],
-        caseman=buffer,
-        top_k=1
+def init_anet(size, buffer):
+    return ANET(
+        [size + 1, 34, 45, size],
+        buffer=buffer,
+        batch_size=20
     )
 
 
 def main():
     # n, num_games, verbose, starting_player, max_rollouts = setup_game()
-    n, num_games, verbose, starting_player, max_rollouts = 5, 50, False, 1, 100
+    n, num_games, verbose, starting_player, max_rollouts = 5, 200, False, 1, 100
     results = []
-    save_interval = 50
     game_num = 1
     viewer = None
 
     ## NN
-    buffer = ReplayBuffer()
-    gann = init_gann(n * n, buffer)
-    sess = tft.gen_initialized_session()
-
+    buffer = ReplayBuffer(vfrac=0.1, tfrac=0.1, size=40)
+    anet = init_anet(n ** 2, buffer)
+    train_interval = 2
+    saving_interval = 50
     while num_games >= game_num:
         game = Hex(n, starting_player)
-        viewer = Board(game)
+        next_root = None
+        # viewer = Board(game)
         while game.get_moves():
-            mc = MonteCarlo(game, max_rollouts)
-            mc.run(lambda _input: gann.get_best(sess, _input))
+            mc = MonteCarlo(game, max_rollouts, next_root)
+            mc.run(lambda _input: anet.predict(_input))
             case = mc.get_training_case()
             buffer.push(case)
-            next_move = mc.get_best_move()
-            game.do_move(next_move)
-            viewer.do_move(next_move, game.player)
-        gann.run(sess, epochs=100, do_testing=False, show_interval=5)
+            next_root = mc.get_best_move()
+            game.do_move(next_root.move)
+            if viewer:
+                viewer.do_move(next_root.move, game.player)
+        if game_num % train_interval == 0:
+            anet.train_model()
+            anet.evaluate()
+        if game_num % saving_interval == 0:
+            anet.save_to_file("anet/model_step_{0}.h5".format(game_num))
         if game.get_result(game.player) == 1:
             results.append(game.player)
         game_num += 1

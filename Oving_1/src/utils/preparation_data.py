@@ -22,6 +22,7 @@ def preparation_normalize(data_list):
     for inp, tar in data_list:
         data_column.extend(inp)
     input_matrix = np.array(data_column).reshape(data_set_size, len_targets)
+
     for index in range(len_targets):
         normalize(input_matrix, index)
     for i in range(len(data_list)):

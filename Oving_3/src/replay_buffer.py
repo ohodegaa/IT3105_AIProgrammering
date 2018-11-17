@@ -4,12 +4,14 @@ import random
 
 class ReplayBuffer:
 
-    def __init__(self, vfrac=0, tfrac=0, cfrac=1.0):
+    def __init__(self, vfrac=0, tfrac=0, cfrac=1.0, size=20):
         self.validation_fraction = vfrac
         self.test_fraction = tfrac
         self.training_fraction = 1 - (vfrac + tfrac)
 
         self.cfrac = cfrac
+
+        self.size = size
 
         self.buffer = []
         self.cases = []
@@ -20,11 +22,11 @@ class ReplayBuffer:
 
     def push(self, case):
         self.buffer.append(case)
-        self.update()
+        if len(self.buffer) > self.size:
+            self.pop()
 
     def pop(self):
         popped = self.buffer.pop(-1)
-        self.update()
         return popped
 
     def update(self):
@@ -45,11 +47,17 @@ class ReplayBuffer:
         self.validation_cases = ca[separator1:separator2]
         self.testing_cases = ca[separator2:]
 
-    def get_training_cases(self): return self.training_cases
+    def get_training_cases(self):
+        self.update()
+        return self.training_cases
 
-    def get_validation_cases(self): return self.validation_cases
+    def get_validation_cases(self):
+        self.update()
+        return self.validation_cases
 
-    def get_testing_cases(self): return self.testing_cases
+    def get_testing_cases(self):
+        self.update()
+        return self.testing_cases
 
     def __str__(self):
         out = ""
@@ -57,3 +65,6 @@ class ReplayBuffer:
             out += str(case) + "\n"
 
         return out
+
+    def __len__(self):
+        return len(self.buffer)

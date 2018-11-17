@@ -8,9 +8,9 @@ class GameState:
 
     def __init__(self, starting_player=1):
         if not starting_player or starting_player not in range(-1, 2):
-            self.player = choice(range(-1, 2))
+            self.player = choice([-1, 1])
         else:
-            self.player = -1 if starting_player == 1 else 1
+            self.player = 1 if starting_player == 1 else -1
         self.state = None
 
     def do_move(self, move: tuple):
