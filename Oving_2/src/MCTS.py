@@ -21,7 +21,7 @@ class Node:
     def select_child(self):
         s = sorted(self.children,
                    key=lambda child: child.get_statistics() +
-                                     math.sqrt(2 * math.log(self.visits) / (1 + child.visits)))[-1]
+                                     math.sqrt(2 * math.log(self.visits) / (1 + child.visits)))[0]
         return s
 
     def add_child(self, move, game: GameState):
@@ -123,7 +123,7 @@ class MonteCarlo:
         return self.root_node.get_training_case()
 
     def get_best_move(self):
-        return sorted(self.root_node.children, key=lambda c: c.get_statistics())[-1]
+        return sorted(self.root_node.children, key=lambda c: c.get_statistics())[0]
 
     def backpropagate(self, node, game):
         while node is not None:
@@ -156,7 +156,8 @@ class MonteCarlo:
     def search_tree(self, root_node, game: GameState):
         node = root_node
         while node.untried_moves == [] and node.children != []:
-            node = node.select_child()
+            use_stats = choice([1, 0])
+            node = node.select_child() if use_stats else choice(node.children)
             game.do_move(node.move)
         return node
 

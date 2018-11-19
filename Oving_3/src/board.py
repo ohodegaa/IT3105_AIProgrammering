@@ -24,7 +24,7 @@ class Board:
     def init_board(self, hex_state):
         for (i, row) in enumerate(hex_state):  # y
             for (j, cell) in enumerate(row):  # x
-                fill = self.COLORS[cell]
+                fill = self.COLORS[int(cell)]
                 self.draw_polygon(j, i, fill)
 
     def update_board(self):

@@ -1,6 +1,7 @@
 import os
 import itertools
 from anet import ANET
+from board import Board
 from hex import Hex
 from MCTS import get_feature
 from random import choice
@@ -25,14 +26,17 @@ class Tournament:
             else:
                 continue
 
-    def run_tournament(self, path="topp"):
+    def run_tournament(self, path="topp", verbose=False):
         self.fetch_game_models(path)
         games = self.get_games()
         wrong_moves = 0
         total_moves = 0
+        viewer = None
         for p1, p2 in games:
             for i in range(self.num_games):
                 game = Hex(5, 1)
+                if verbose and i == self.num_games - 1:
+                    viewer = Board(game)
                 while len(game.get_moves()) > 0:
                     if self.random and game.player == Hex.PLAYER_LEFT:
                         next_move = choice(game.get_moves())
@@ -44,6 +48,9 @@ class Tournament:
                         if next_move not in game.get_moves():
                             wrong_moves += 1
                             next_move = choice(game.get_moves())
+                    if i == self.num_games - 1 and viewer is not None:
+                        viewer.do_move(next_move, game.player)
+
                     total_moves += 1
                     game.do_move(next_move)
                 res_p1 = game.get_result(Hex.PLAYER_TOP)

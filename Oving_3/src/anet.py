@@ -92,6 +92,7 @@ class ANET:
             pp.pprint(prediction)
         return index_max[1:]
 
+    """
     def evaluate(self):
         x_test, y_test = self.get_cases(self.buffer.get_testing_cases())
 
@@ -108,6 +109,7 @@ class ANET:
             if index_max_pred == index_max_true:
                 correct += 1
         print("Correct predictions (test): " + str(float(correct / len(x_test))))
+        """
 
     def train_model(self, epochs=None, verbose=False):
         epochs = epochs if epochs is not None else self.epochs

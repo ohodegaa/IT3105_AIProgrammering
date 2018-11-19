@@ -26,7 +26,9 @@ class PathFinder:
         return False
 
     def winning_pos(self, pos):
-        return pos[0] == len(self.state) - 1 if self.player == self.game.PLAYER_TOP else pos[1] == len(self.state) - 1
+        winning = pos[0] == len(self.state) - 1 if self.player == self.game.PLAYER_TOP else pos[1] == len(
+            self.state) - 1
+        return winning
 
     def get_next_positions(self, current):
         positions = []

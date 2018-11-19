@@ -15,14 +15,19 @@ class Hex(GameState):
 
         self.state = np.zeros((board_size, board_size), dtype=np.float64)
         self.board_size = board_size
+        self.has_winner = False
 
     def do_move(self, move: tuple):
         self.state[move[0]][move[1]] = self.player
+        if self.get_result(self.player):
+            self.has_winner = self.player
         self.player = self.get_next_player()
 
-    def get_moves(self):
+    def get_moves(self, verbose=False):
         moves = []
-        if self.get_result(self.player):
+        if self.has_winner:
+            if verbose:
+                print("Winner")
             return []
         for i in range(len(self.state)):
             for j in range(len(self.state[i])):

@@ -1,6 +1,7 @@
 import math
 
 from MCTS import MonteCarlo
+from board import Board
 from hex import Hex
 from replay_buffer import ReplayBuffer
 from anet import ANET
@@ -47,56 +48,67 @@ def init_anet(size, buffer):
     return ANET(
         size=size,
         buffer=buffer,
-        batch_size=20,
-        optimizer=optimizers.Adagrad(0.005)
+        batch_size=100,
+        optimizer=optimizers.Adagrad(0.003)
     )
 
 
 def main():
     # n, num_games, verbose, starting_player, max_rollouts = setup_game()
-    n, num_games, verbose, starting_player, max_rollouts = 5, 200, False, 1, 0.5
+    n, num_games, verbose, starting_player, max_rollouts = 5, 10, False, 1, 0.1
     results = []
     game_num = 1
     viewer = None
 
     run_tournament = True
-    with_training = True
+    short = True
+    with_training = False
     num_games_tournament = 25
-    if run_tournament:
+    saving_interval = 1
+    if run_tournament and short:
         save_path = "short_topp"
-    else:
+    elif run_tournament and not short:
         save_path = "long_topp"
 
     ##### CONFIG #####
 
-    buffer_size = 40
-    train_interval = 40
-    saving_interval = 10
-    moves_done = 0
-    epochs = 300
+    buffer_size = 500
+    train_interval = 5
+    epochs = 200
 
     ##################
 
+    ##### verbose ####
+
+    main_verbose = False
+    tournament_verbose = False
+
+    ##################
+
+    moves_done = 0
     buffer = ReplayBuffer(vfrac=0.1, tfrac=0.1, size=buffer_size)
     anet = init_anet(n, buffer)
 
-    if with_training:
+    if run_tournament and with_training:
         anet.save_to_file(save_path + "/model_step_{0}.h5".format(0))
     game = Hex(n, starting_player)
     ROOT_NODE = Node(game=game)
+    viewer = None
+
     while with_training and num_games >= game_num:
         game = Hex(n, starting_player)
         next_root = ROOT_NODE
-        # viewer = Board(game)
+        if main_verbose:
+            viewer = Board(game)
         print("Game number {}".format(game_num))
-        while game.get_moves():
+        while len(game.get_moves(True)) > 0:
             mc = MonteCarlo(game, max_rollouts, next_root)
             mc.run(lambda _input: ANET.predict(_input, model=anet.model))
             case = mc.get_training_case()
             buffer.push(case)
             next_root = mc.get_best_move()
-            game.do_move(next_root.move)
-            moves_done += 1
+            _move = next_root.move
+            _player = next_root.player
 
             if viewer:
                 viewer.do_move(next_root.move, game.player)
@@ -104,6 +116,8 @@ def main():
                 buffer.update()
                 anet.train_model(epochs)
                 anet.run_against_random(num_games=50, game_num=game_num)
+            game.do_move(next_root.move)
+            moves_done += 1
         if saving_interval > 0 and game_num % saving_interval == 0:
             anet.save_to_file(save_path + "/model_step_{0}.h5".format(game_num))
             buffer.size += 20
@@ -118,7 +132,7 @@ def main():
 
     if run_tournament:
         tournament = Tournament(num_games_tournament)
-        tournament.run_tournament(save_path)
+        tournament.run_tournament(save_path, tournament_verbose)
 
     else:
         anet.save_to_file("best_topp/model_2.h5")
