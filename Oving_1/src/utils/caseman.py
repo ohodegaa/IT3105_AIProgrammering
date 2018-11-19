@@ -40,3 +40,4 @@ class Caseman:
     def get_validation_cases(self): return self.validation_cases
 
     def get_testing_cases(self): return self.testing_cases
+
