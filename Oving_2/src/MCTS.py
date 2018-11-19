@@ -1,7 +1,9 @@
 from random import choices, choice
 import math
 from game_state import GameState
+from hex import Hex
 import numpy as np
+import time
 
 
 class Node:
@@ -12,15 +14,14 @@ class Node:
         self.wins = 0
         self.visits = 0
         self.state = game.get_state()
-        self.next_player = game.get_next_player()
 
         self.untried_moves = game.get_moves()
         self.player = game.player
 
     def select_child(self):
         s = sorted(self.children,
-                   key=lambda child: child.wins / child.visits +
-                                     math.sqrt(2 * math.log(self.visits) / child.visits))[-1]
+                   key=lambda child: child.get_statistics() +
+                                     math.sqrt(2 * math.log(self.visits) / (1 + child.visits)))[-1]
         return s
 
     def add_child(self, move, game: GameState):
@@ -34,8 +35,9 @@ class Node:
         self.visits += 1
 
     def get_statistics(self):
-        return self.wins / self.visits
+        return float(self.wins / self.visits)
 
+    """
     def get_training_case(self):
         feature = []
         feature.append(self.player)
@@ -55,76 +57,94 @@ class Node:
             target.extend(_target[i])
 
         return np.array(feature), np.array(target)
+    """
 
-    """
-        def get_training_case(self):
-            target = np.zeros((len(self.state), len(self.state)))
-    
-            for child in self.children:
-                row, col = child.move
-                target[row][col] = child.get_statistics()
-    
-            # normalization
-            tmax, tmin = target.max(), target.min()
-            target = (target - tmin) / (tmax - tmin)
-    
-            # to linear
-            _target = []
-            for i, row in enumerate(target):
-                _target.extend(row)
-    
-            feature = generate_feature(self.state, self.next_player)
-    
-            return np.array([feature, np.array(_target)])
-    """
+    def get_training_case(self):
+        feature = get_feature(self.state, self.player == Hex.PLAYER_LEFT)
+        target = get_target(self.state, self.children, self.player == Hex.PLAYER_LEFT)
+
+        return [feature, target]
 
     def __str__(self):
         return "Node: move: " + str(self.move)
 
 
+def get_target(state, children, transpose=False):
+    target = np.zeros((len(state), len(state)), dtype=np.float64)
+
+    for child in children:
+        i, j = child.move
+        target[i][j] = 1 - float(child.get_statistics())
+    target = target.transpose() if transpose else target
+    return target
+
+
+def get_feature(state, invert=False):
+    feature = np.zeros((len(state), len(state), 2))
+    _state = state if not invert else state.transpose()
+    for i in range(len(_state)):
+        for j in range(len(_state)):
+            _state[i][j] = Hex.PLAYER_LEFT if _state[i][j] == Hex.PLAYER_TOP else (
+                Hex.PLAYER_TOP if _state[i][j] == Hex.PLAYER_LEFT else Hex.CELL_EMPTY)
+            p1 = int(_state[i][j] == Hex.PLAYER_TOP)
+            p2 = int(_state[i][j] == Hex.PLAYER_LEFT)
+            free = int(_state[i][j] == Hex.CELL_EMPTY)
+            feature[i][j] = [p1, p2]
+
+    return feature
+
+
 class MonteCarlo:
 
-    def __init__(self, game: GameState, max_rollouts: int, root: Node = None):
+    def __init__(self, game: GameState, max_rollouts: float, root: Node = None):
         self.max_rollouts = max_rollouts
-        self.root_node = Node(game=game)
+        self.root_node = root if root is not None else Node(game=game)
         self.game = game
+        self.wrong_preds = 0
+        self.total_preds = 0
 
-    def run(self, get_next=None):
-        for r in range(self.max_rollouts):
+    def run(self, predict=None):
+        begin = time.time()
+        while time.time() - begin < self.max_rollouts:
             node = self.root_node
             game = self.game.clone()
+            if len(game.get_moves()) <= 0:
+                return
             leaf_node = self.search_tree(node, game)
             node = self.expand_node(leaf_node, game)
-            self.rollout(game, get_next)
+            self.rollout(game, predict)
             self.backpropagate(node, game)
+        if self.total_preds > 0:
+            return
+            print("Wrong by AI: {}/{} ---> {}".format(self.wrong_preds, self.total_preds,
+                                                      float(self.wrong_preds / self.total_preds)))
 
     def get_training_case(self):
         return self.root_node.get_training_case()
 
     def get_best_move(self):
-        return sorted(self.root_node.children, key=lambda c: c.visits)[-1]  # should it be visits here or stat?
+        return sorted(self.root_node.children, key=lambda c: c.get_statistics())[-1]
 
     def backpropagate(self, node, game):
         while node is not None:
             node.update(game.get_result(node.player))
             node = node.parent
 
-    def rollout(self, game: GameState, get_best=None):
-        wrong_preds = 0
+    def rollout(self, game: GameState, predict=None):
         while len(game.get_moves()) > 0:
-            if get_best is not None:
-                linear_state = generate_linear_feature(game.state, game.get_next_player())
-                next_move_index = get_best(linear_state)
-                next_move = game.index_to_move(next_move_index)
+            if predict is not None:
+                feature = get_feature(game.get_state(), game.player == Hex.PLAYER_LEFT)
+                next_move = predict(feature)
+                self.total_preds += 1
+
+                next_move = (next_move[1], next_move[0]) if game.player == Hex.PLAYER_LEFT else next_move
                 if next_move in game.get_moves():
                     game.do_move(next_move)
                 else:
-                    wrong_preds += 1
+                    self.wrong_preds += 1
                     game.do_move(choice(game.get_moves()))
             else:
                 game.do_move(choice(game.get_moves()))
-
-        # print(wrong_preds)
 
     def expand_node(self, node: Node, game: GameState):
         if len(node.untried_moves) > 0:
@@ -141,6 +161,7 @@ class MonteCarlo:
         return node
 
 
+"""
 def generate_linear_feature(state, next_player):
     feature = []
     feature.append(next_player)
@@ -162,3 +183,4 @@ def generate_feature(state, next_player):
         (len(state), len(state)))
     feature = np.array([player1, player2, player])
     return feature
+"""

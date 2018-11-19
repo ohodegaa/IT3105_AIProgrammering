@@ -1,25 +1,24 @@
 from game_state import GameState
 from path_finder import PathFinder
+import numpy as np
 
 max_number_of_players = 2
 
 
 class Hex(GameState):
     CELL_EMPTY = 0
-    PLAYER_TOP = -1
-    PLAYER_LEFT = 1
+    PLAYER_TOP = 1
+    PLAYER_LEFT = 2
 
     def __init__(self, board_size=5, starting_player=1):
         super(Hex, self).__init__(starting_player)
 
-        self.state = [[self.CELL_EMPTY for _ in range(board_size)] for _ in range(board_size)]
+        self.state = np.zeros((board_size, board_size), dtype=np.float64)
         self.board_size = board_size
 
     def do_move(self, move: tuple):
-
-        moving_player = self.get_next_player()
-        self.state[move[0]][move[1]] = moving_player
-        self.player = moving_player
+        self.state[move[0]][move[1]] = self.player
+        self.player = self.get_next_player()
 
     def get_moves(self):
         moves = []
@@ -27,15 +26,9 @@ class Hex(GameState):
             return []
         for i in range(len(self.state)):
             for j in range(len(self.state[i])):
-                if self.state[i][j] == 0:
+                if self.state[i][j] == self.CELL_EMPTY:
                     moves.append((i, j))
         return moves
-
-    def get_state(self):
-        state_copy = []
-        for row in self.state[:]:
-            state_copy.append(row[:])
-        return state_copy
 
     def get_result(self, p):
         path_finder = PathFinder(self, p)

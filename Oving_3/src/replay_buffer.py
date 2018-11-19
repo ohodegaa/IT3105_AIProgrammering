@@ -26,7 +26,7 @@ class ReplayBuffer:
             self.pop()
 
     def pop(self):
-        popped = self.buffer.pop(-1)
+        popped = self.buffer.pop(0)
         return popped
 
     def update(self):
@@ -39,7 +39,7 @@ class ReplayBuffer:
         self.cases = random.sample(ca, round(len(ca) * self.cfrac))
 
     def organize_cases(self):
-        ca = np.array(self.cases)
+        ca = self.cases[:]
         np.random.shuffle(ca)  # Randomly shuffle all cases
         separator1 = round(len(self.cases) * self.training_fraction)
         separator2 = separator1 + round(len(self.cases) * self.validation_fraction)
@@ -48,15 +48,12 @@ class ReplayBuffer:
         self.testing_cases = ca[separator2:]
 
     def get_training_cases(self):
-        self.update()
         return self.training_cases
 
     def get_validation_cases(self):
-        self.update()
         return self.validation_cases
 
     def get_testing_cases(self):
-        self.update()
         return self.testing_cases
 
     def __str__(self):
